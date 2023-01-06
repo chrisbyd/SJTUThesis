@@ -14,8 +14,8 @@
     %
     % 标题
     %
-    title           = {上海交通大学学位论文 \LaTeX{} 模板示例文档},
-    title*          = {A Sample Document for \LaTeX-based SJTU Thesis Template},
+    title           = {基于深度学习的大规模图像检索},
+    title*          = {Large-scale Image Retrieval Based on Deep Learning},
     %
     % 标题页标题
     %   可使用“\\”命令手动控制换行
@@ -30,18 +30,18 @@
     %
     % 关键词
     %
-    keywords        = {上海交大, 饮水思源, 爱国荣校},
+    keywords        = {深度学习, 深度哈希, 乘积量化，行人重识别},
     keywords*       = {SJTU, master thesis, XeTeX/LaTeX template},
     %
     % 姓名
     %
-    author          = {某\quad{}某},
-    author*         = {Mo Mo},
+    author          = {陈勇彪},
+    author*         = {Yongbiao Chen},
     %
     % 指导教师
     %
-    supervisor      = {某某教授},
-    supervisor*     = {Prof. Mou Mou},
+    supervisor      = {戚正伟},
+    supervisor*     = {Prof. Zhengwei Qi},
     %
     % 副指导教师
     %
@@ -50,28 +50,28 @@
     %
     % 学号
     %
-    id              = {0010900990},
+    id              = {016037910002},
     %
     % 学位
     %   本科生不需要填写
     %
-    degree          = {工学硕士},
-    degree*         = {Master of Engineering},
+    degree          = {工学博士},
+    degree*         = {Ph.D. of Engineering},
     %
     % 专业
     %
-    major           = {某某专业},
-    major*          = {A Very Important Major},
+    major           = {软件工程},
+    major*          = {Software Engineering},
     %
     % 所属院系
     %
-    department      = {某某系},
-    department*     = {Depart of XXX},
+    department      = {电子信息与电气工程学院, 软件学院},
+    department*     = {School of Software, SEIEE},
     %
     % 课程名称
     %   仅课程论文适用
     %
-    course          = {某某课程},
+    % course          = {某某课程},
     %
     % 答辩日期
     %   使用 ISO 格式 (yyyy-mm-dd)；默认为当前时间
@@ -136,6 +136,8 @@
 % 表格中支持跨行
 \usepackage{multirow}
 
+\usepackage{amsmath}
+
 % 表格中数字按小数点对齐
 \usepackage{dcolumn}
 \newcolumntype{d}[1]{D{.}{.}{#1}}
@@ -153,6 +155,7 @@
 \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
 % \usepackage{algorithm, algorithmicx, algpseudocode}
 
+\usepackage{enumerate}
 % 代码环境宏包
 \usepackage{listings}
 \lstnewenvironment{codeblock}[1][]%
@@ -173,6 +176,8 @@
 % 定理环境宏包
 \usepackage{ntheorem}
 % \usepackage{amsthm}
+
+
 
 % 绘图宏包
 \usepackage{tikz}

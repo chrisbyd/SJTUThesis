@@ -44,7 +44,6 @@
    \label{fig:vit}
   \end{figure}
 
-
 \subsubsection{视觉转换器}
 在2020年底, 完全基于自注意力机制 （self-attention）的视觉转换器 （vision transformer）的横空出世挑战了传统CNN在计算机视觉领域的绝对优势地位, 并在多个视觉任务超过ResNet等CNN模型的性能。Transformer~\cite{vaswani2017attention}最初由Google在2017年提出, 应用在自然语言处理领域（Natural Language Processing, NLP）代替传统循环神经网络（RNN）进行序列建模。这种完全基于自注意力机制的深度模型相比较于RNN的模型具有可并行化计算以及低内存开销的优势, 并且在一系列的机器翻译任务中取得优异的性能。Devlin 等人将 Transformer \cite{devlin2018bert} 应用至无监督NLP模型预训练任务, 并在当时11个任务上取得最先进的结果。随后, OpenAI开发了GPT-3~\cite{brown2020language}, 一个具有1750亿参数的大模型, 并且在45 TB的数据进行预训练。模型在多个NLP的任务都取得了极佳的性能, 包括机器翻译 (machine translation) 、 视觉问答（visual question answering）等。基于Transformer的模型展示了强大的表征能力，并且成为了NLP领域的主流模型。\par
 
@@ -91,18 +90,145 @@
 2021年, 传统的vision transformer只能刻画图片块之间的联系, 而忽略了一个图片块内部的特征。 为了解决这个问题, 如图\ref{fig:tit}, Han 等人提出一个transformer in transformer的架构, 对原始图片块继续细分成更小的图片块, 并且同时对粗粒度和细粒度的图片块进行建模。随后, CAT~\cite{lin2022cat} 和 Twins~\cite{chu2021twins} 提出交替在层间使用全局以及局部的注意力机制来减少计算复杂度以及提高表征能力。\par
 
 由于如Eq.~\ref{eq:attention}所示, 自注意力力机制的计算复杂度随着图片块数量$N$的增长成平方增长, 使得基础的vision transformer模型无法应用在高分辨率的视觉任务中。 2021年, ICCV的最佳论文奖得主 Swin Transformer~\cite{liu2021swin}提出在移动窗口内进行自注意力计算 （shifted-window self-attention）, 如Fig.~\ref{fig:swin}所示, 图左是在第l层的窗口划分, 其中自注意力的计算局限于红色的窗口内。假设每一个窗口包含$M \times M$个图片块, 那么基于窗口的自注意力机制的计算复杂度 （W-MSA）可以由以下的公式表示:
+
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=15cm]{deepretrieval.png} \\
+    \bicaption[基于预训练CNN的图像检索基本框架, 图~\cite{chen2021deep}]
+      {基于预训练CNN的图像检索基本框架,从左到右, 包括图像特征提取, 特征嵌入与聚合以及最后的特征匹配阶段。~\cite{chen2021deep}}
+      {The general framework of deep image retrieval based on pretrained CNN. It includes the image feature retrieval, feature embedding and aggregation and the final feature matching phases. }
+   \label{fig:retrieval}
+\end{figure}
+
 \begin{equation}
     \Omega(\text { W-MSA })=4 h w C^2+2 M^2 hwC.
 \end{equation}
 
 其中$hw$是图片块的数量。由此可知, Swin-transformer 的计算复杂度随着图像大小可以呈线性增长, 具有可扩展性。Swin Transformer在图像分类, 目标检测等领域都达到了最先进的性能, 开始成为计算机视觉领域的主干模型~\cite{liu2021swinnet,liu2022video, huang2022swin, cao2021swin, ma2022swinfusion}。在本文中, 我们第一个探索vision transformer在大规模图像检索领域的应用，并且取得了优异的性能。
+
 \subsection{基于深度特征的图像检索}
-在深度学习时代的图像检索方法主要分为两种: (1) 基于预训练CNN的特征提取 （2）基于任务的微调。早期的基于深度学习的检索方法基于两阶段检索, 即使使用用在图像分类数据集如ImageNet进行分类任务训练后的CNN代替基于人工的特征提取方法,如SIFT, 进行特征提取, 第二阶段如Sec.~\ref{sec:manual}, 使用 VLAD、 BoW 或者 FV 生成全局的表征向量。 而基于端到端的检索, 使用图像的监督标签, 端到端训练生成用于图像检索的表征向量, CNN 会在监督训练的过程中调整学习适用于特定任务的图像特征。 
+在深度学习时代的图像检索方法主要分为两种: (1) 基于预训练CNN的特征提取 （2）基于任务的微调。早期的基于深度学习的检索方法基于两阶段检索, 即使用在图像分类数据集如ImageNet进行分类任务训练后的CNN代替基于人工的特征提取方法,如SIFT, 进行特征提取, 第二阶段如Sec.~\ref{sec:manual}, 使用 VLAD、 BoW 或者 FV 生成全局的表征向量。 而基于端到端的检索, 使用图像的监督标签, 端到端训练生成用于图像检索的表征向量, CNN 会在监督训练的过程中调整学习适用于特定任务的图像特征。
+
 \subsubsection{基于预训练CNN的特征提取}
-一部分基于预训练CNN提取的特征工作一般也包含两个阶段: ``特征提取'' 与 ``特征聚合''。``特征提取'': 如图所示, 一部分工作从全连接层得到特征向量, 类似手工特征提取方案的全局特征描述符, 然后使用PCA 降以及标准化~\cite{sharif2014cnn,gong2014multi}。然而, 基于全连接层的特征向量损失了图像的空间信息, 缺乏局部几何不变性~\cite{gong2014multi}。因此, 另一部分研究人员研究使用卷积层后的特征图进行图像检索。2016年, Razavian~\cite{razavian2016visual} 提取CNN最后一个卷积层的多尺度特征, 并且通过空间池化(spatial pooling) 降维用于检索。随后 Morere 提出嵌套不变池化 （nested invariance pooling ）来生成用于检索的全局描述符。
-\subsubsection(基于任务的微调)
+一部分基于预训练CNN提取的特征工作一般也包含两个阶段: ``特征提取'' 与 ``特征聚合''。``\textbf{特征提取}'': 如图所示, 一部分工作从全连接层得到特征向量
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=15cm]{feature_agg.png} \\
+    \bicaption[卷积特征图的特征聚合方法, 图~\cite{chen2021deep}]
+      {基于预训练CNN的图像检索基本框架,从左到右, 包括图像特征提取, 特征嵌入与聚合以及最后的特征匹配阶段。~\cite{chen2021deep}}
+      {}
+   \label{fig:featureagg}
+\end{figure}
+, 类似手工特征提取方案的全局特征描述符,然后使用PCA 降以及标准化~\cite{sharif2014cnn,gong2014multi}。然而, 基于全连接层的特征向量损失了图像的空间信息, 缺乏局部几何不变性~\cite{gong2014multi}。因此, 另一部分研究人员研究使用卷积层后的特征图进行图像检索。2016年, Razavian~\cite{razavian2016visual} 提取CNN最后一个卷积层的多尺度特征, 并且通过空间池化(spatial pooling) 降维用于检索。随后 Morere 提出嵌套不变池化 （nested invariance pooling ）来生成用于检索的全局描述符~\cite{morere2017nested}。在2017年 Albert \cite{jimenez2017class} 等人提出 Class Activation Maps (CAM) 来对CNN的卷积特征图生成每个类别不同的权重图。随后这些权重图经过池化得到对应的类向量。最后的全局特征向量是所有类向量经过PCA降维以及标准化后的集成。2018年, Yihang~\cite{lou2018multi} 提出 MSCAN, 一个多尺度的注意力网络来生成全局特征描述符。通过使用 Long Short-Term Memory (LSTM) 网络来对不同卷积层后的特征图建模, 以及使用注意力机制对每一层的特征图加权, 模型可以学习到不同尺度的注意力, 从而提高检索性能。\par
+``\textbf{特征聚合}'': 将CNN得到的卷积特征图聚合成适用于检索任务的紧凑的全局特征向量。一种最简单的方式是通过最大池化 （max pooling） 、平均池化（average pooling） 等~\cite{razavian2016visual, pang2018unifying}。
+2016年, Razavian 提出MAC~\cite{razavian2016visual} 如Fig.~\ref{fig:featureagg}所示, 在通道域进行最大池化操作, 如Eq.~\ref{eq:mac}。
+\begin{equation}
+    \mathbf{f}^{(m)}=\left[\mathrm{f}_1^{(m)} \ldots \mathrm{f}_k^{(m)} \ldots \mathrm{f}_K^{(m)}\right]^{\top}, \quad \mathbf{f}_k^{(m)}=\max _{x \in \mathcal{X}_k} x.
+    \label{eq:mac}
+\end{equation}
+其中 $\mathcal{X}$是卷积生成的特征图, $k$ 是对应的特征图的通道。
+Tolias 等人提出R-MAC~\cite{tolias2015particular}在在特征图中分块进行最大池化, 然后再聚合成一个全局特征向量，这样可以保留更多的局部信息，便于检索。Babenko 提出 SPoC~\cite{babenko2015aggregating} 如图 Fig.~\ref{fig:featureagg}, 作者先使用Gaussian weighting对特征图进行加权:
+\begin{equation}
+    \alpha_{(x, y)}=\exp \left\{-\frac{\left(y-\frac{H}{2}\right)^2+\left(x-\frac{W}{2}\right)^2}{2 \sigma^2}\right\}
+    \label{eq:gaussianweight}
+\end{equation}
+其中$x$， $y$是在特征图中的坐标, $H$, $W$是特征图的长和宽。 加权之后的特征图经过求和池化 （sum pooling）后得到全局特征向量如下。
+\begin{equation}
+    \mathbf{f}^{(a)}=\left[\mathrm{f}_1^{(a)} \ldots \mathrm{f}_k^{(a)} \ldots \mathrm{f}_K^{(a)}\right]^{\top}, \quad \mathrm{f}_k^{(a)}= \sum_{x \in \mathcal{X}_k} x
+\end{equation}
+2017年 Radenovi´ 提出 GeM~\cite{radenovic2018fine} 基于广义平均 （generalized mean）进行池化操作。
+\begin{equation}
+    \mathbf{f}^{(g)}=\left[\mathbf{f}_1^{(g)} \ldots \mathbf{f}_k^{(g)} \ldots \mathbf{f}_K^{(g)}\right]^{\top}, \quad \mathbf{f}_k^{(g)}=\left(\frac{1}{\left|\mathcal{X}_k\right|} \sum_{x \in \mathcal{X}_k} x^{p_k}\right)^{\frac{1}{p_k}}
+\end{equation}
+其中$p_k$ 可以视为一个超参手动设置, 也可以通过反向传播进行梯度训练。\par
+除了通过各种池化操作将卷积特征图生成全局特征向量, 另一部分的工作通过将特征图视为多个局部特征向量的组合, 通过特征编码的方式聚合成一个全局向量。常见的有基于BoW ~\cite{li2016exploiting, mohedano2016bags, zheng2016accurate}特征编码的检索工作, 基于 VLAD~\cite{gong2014multi, yue2015exploiting}的工作以及基于FV~\cite{jegou2011aggregating, sanchez2013image}的工作。 
+
+\subsubsection{基于任务的微调}
+基于预训练CNN特征提取然后进行检索的方法有一个较大的缺陷。基于ImageNet的图像分类任务进行预训练的模型应用在其他的视觉任务, 由于与训练的图像数据和检索任务的图像数据有较大的差异 (domain gap), 预训练好的CNN难以在当前任务的图像数据提取出准确的图像特征, 从而无法应用于精确的检索任务中。基于任务的微调方法, 一般通过使用不同的神经网络架构, 采取不同的采样策略, 以及设计不同的损失函数来监督更新CNN的参数。
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=15cm]{singlestream.pdf} \\
+    \bicaption[基于分类损失函数的图像检索架构]
+      {基与分类损失的CNN架构微调架构。从左至右是输入的图片, 提取特征的主干CNN网络, 以及全连接层和交叉熵损失函数}
+      {The framework of convolutional Neural Network based image retrieval with categorial loss. The input images are on the left. The middle is the convolutional neural network backbone. Meanwhile, an additional fully connected layer is appended for the classification loss.  }
+   \label{fig:featurestream}
+\end{figure}
+
+
+一般基于任务的微调方法也分为基于监督标签的监督训练微调（supervised fine-tuning） 以及无监督训练微调 （unsupervised finetuning）的方法。本文主要介绍基于监督训练的微调方法主要架构以及发展。\par
+\textbf{基于分类损失的微调方法:} 基于分类损失函数的微调方法, 根据图像检索数据集提供的标签, 在基础的主干神经网络例如AlexNet、VGG、 GoogleNet后添加一个全链接层用于分类, 然后使用交叉熵 （cross entropy）损失函数以及随机梯度下降进行端到端的训练优化CNN的参数。 基本的神经网络架构如图Fig.~\ref{fig:featurestream} 所示。一般做法需要在基础的架构后添加一个全连接层, 全连接层的输出维度是图片的类的数量。 对于单分类的数据集, 标准的基于交叉熵损失函数如下:
+\begin{equation}
+    \mathcal{L}_{C E}\left(\hat{p}_i, y_i\right)=-\sum_i^c\left(y_i \times \log \left(\hat{p}_i\right)\right).
+\end{equation}
+其中 $y_i$ 是真实的标签, $\hat{p}_i$ 是模型输出的概率。$c$是总共的类的数量。而对于一张图片可能具有多个标签的检索数据集, 一般使用sigmoid函数激活, 交叉熵损失函数如下所示:
+\begin{equation}
+    \text { Loss }=-\sum_{i=1}^c(y \log (\hat{p})+(1-y) \log (1-\hat{p}))
+\end{equation} \par
+2014年, Babenko~\cite{babenko2014neural} 提出第一个基于AlexNet微调的图像检索框架, 通过实验证实在图像数据集上进行重新的分类训练可以提高模型的检索性能。 \par
+
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=15cm]{siamese.pdf} \\
+    \bicaption[基于孪生神经网络的图像检索架构]
+      {基与孪生CNN架构的微调图像检索架构。输入的图片以图片对的形式同时输入权重共享的CNN中, 使用对比损失来拉近相同标签图片的表征, 拉远不同标签的表征}
+      {The framework of siamese convolutional Neural Network based image retrieval with contrastive loss. The input images are organized in pairs. The pairwise contrastive loss is adopted to push away representations from negative image pairs and pull close those from positive pairs }
+   \label{fig:siamese}
+\end{figure}
+
+2017年, Noh~\cite{noh2017large}引入注意力机制并且通过监督训练同步学习注意力网络以及CNN的参数, 让卷积神经网络可以学习到局部的细粒度特征。 \par
+2020年, Cao~\cite{cao2020unifying} 提出在模型中同时集成全局和局部的特征。作者使用GeM 池化来得到全局向量, 同时使用ArcFace~\cite{deng2019arcface} 损失函数, 使得类内的向量尽量近, 类间的
+向量距离尽量远。对于局部特征的学习, 使用自编码器 （auto encoder）缩小卷积特征图的尺度, 并且使用注意力机制以及基于softmax的分类损失函数进行端到端的监督训练。 \par
+\textbf{基于孪生神经网络的微调方法:} 孪生卷积神经网络是两个完全一致的CNN共享所有的参数。孪生神经网络的输入是图片对 $(x_i, x_j)$, 监督信号是 0 或者 1, 如果两张图片是标签一致, 则 $\mathcal{S}(x_i, x_j) = 1$, 如果两张图片标签不一致, 则 $\mathcal{S}(x_i, x_j) = 0$。 通用的成对对比损失函数如下 （pairwise contrastive loss）:
+\begin{equation}
+    \begin{aligned}
+        \mathcal{L}_{\text {PCS }}\left(x_i, x_j\right) & =\frac{1}{2} \mathcal{S}\left(x_i, x_j\right) \mathcal{D}\left(x_i, x_j\right)+ \\
+        & \frac{1}{2}\left(1-\mathcal{S}\left(x_i, x_j\right)\right) \max \left(0, m-\mathcal{D}\left(x_i, x_j\right)\right)
+        \end{aligned}.
+        \label{eq:siamese}
+\end{equation}
+其中$m$ 是一个需要设定的间距参数, $\mathcal{D}$ 是一个距离函数, 通常情况下是用欧式距离代替。在Eq.~\ref{eq:siamese}中可以看到如果图片对不属于同一类别即$\mathcal{S}(x_i, x_j) = 0$ 不属于同一类别, 则 
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=15cm]{siamese_variant.pdf} \\
+    \bicaption[基于孪生神经网络的图像检索架构]
+      {基与孪生CNN架构的微调图像检索架构。输入的图片以图片对的形式同时输入权重共享的CNN中, 使用对比损失来拉近相同标签图片的表征, 拉远不同标签的表征}
+      {The framework of siamese convolutional Neural Network based image retrieval with contrastive loss. The input images are organized in pairs. The pairwise contrastive loss is adopted to push away representations from negative image pairs and pull close those from positive pairs }
+   \label{fig:siamesevariant}
+\end{figure}
+
+
+$\mathcal{D}(x_i,x_j)$ 需要大到接近 $m$ 才能使损失最小。反而, 如果属于同一类别, 则损失函数使得图片对的表征距离 $\mathcal{D}(x_i, x_j)$ 尽量接近 0。\par
+2016年, Li~\cite{li2015feature} 等人提出基于孪生神经网络进行端到端的训练用于图像检索。作者使用基于最大似然估计来优化参数, 本质上是使用sigmoid 交叉熵损失函数进行图片对二分类, 并且取得了优异的检索性能。 \par
+2017年, Eng-Jon~\cite{Eng-Jon} 基于孪生卷积神经网络, 在卷积特征图后使用Fisher Vector算法来代替传统的池化方法提取全局特征向量, 然后基于对比损失函数进行神经网络优化训练。\par
+2018年, Radenovi ~\cite{radenovic2018fine} 则基于 GeM 池化算法得到全局的特征向量, 同时使用对比损失进行成对的监督学习。 \par
+尽管基于孪生网络对比损失的微调图像检索方法在精度上优于基于分类损失的算法, 孪生对比损失函数有一个明显的缺陷, 由Eq.~\ref{eq:siamese} 可知, 对于相似的图片对, 此损失函数会将损失降低到无限趋近于0, 也就是两个向量需要完全一致。由于图片内容的迥异, 正样本对的特征可能会有差距, 直接映射到相同的一点会造成神经网络学习困难, 导致性能的下降。 \par
+Cao ~\cite{cao2016quartet} 提出Quartet-net 使用双间隔对比损失函数（double margin contrastive loss）来监督训练:
+\begin{equation}
+    \begin{array}{r}
+        \mathcal{L}_{\mathcal{D}_{-} S i a m}\left(x_i, x_j\right)=\frac{1}{2} \mathcal{S}\left(x_i, x_j\right) \max \left(0, \mathcal{D}\left(x_i, x_j\right)-m_1\right)+ \\
+        \frac{1}{2}\left(1-\mathcal{S}\left(x_i, x_j\right)\right) \max \left(0, m_2-\mathcal{D}\left(x_i, x_j\right)\right).
+        \end{array}
+        \label{eq:doublem}
+\end{equation}
+其中$m_1 > 0$ 并且 $m_2 > 0$ 是对应对于正样本对和负样本对的间隔参数。由 Eq.~\ref{eq:doublem}所知, 对于正样本对, 也就是 $\mathcal{S}_{x_i, x_j} = 1$, 损失函数只会使两个向量的距离接近$m_1$ 而不是接近 $0$。同时, 文章使用一个模仿学习 （mimic learning）, 额外引入一个教师卷积神经网络 （teacher CNN ），模仿学习的损失函数如下:
+\begin{equation}
+    E(\mathbf{x})=\frac{1}{2}\left\|\mathbf{z}_S-\mathbf{z}_T\right\|_2^2.
+\end{equation}
+$\mathbf{z}_S$ 和 $\mathbf{z}_{T}$ 是教师CNN和学生CNN的概率输出。其中学生CNN是由Eq.~\ref{eq:doublem}进行训练, 通过引入模仿学习, 可以防止学生CNN过拟合。 \par
+另一种基于孪生神经网络的检索架构不基于对比损失函数,  基本的框架如图所示Fig.~\ref{fig:siamesevariant}。通过将两个分支的特征向量拼接, 新增一个基于全连接的神经网络输出这个拼接向量的相似度。 典型的应用有:\par
+2016年, Lin 提出 PersonNet~\cite{wu2016personnet} 是基于VGG设计的孪生神经网络。与Fig.~\ref{fig:siamesevariant}不同在于, PersonNet 在两个卷积层后拼接, 然后通过卷积网络最后生成相似度分数。 \par
+随后, 2017年, zhedong等人~\cite{zheng2017discriminatively} 基于此架构设计一个用于行人检索的孪生网络架构。不同点在于,模型最后生成的是一个2维向量, 即图片对属于同一类以及不同类的概率。随后使用交叉熵损失函数来监督。 同时, 作者在每一个分支后面添加了分类损失函数, 使得模型再学会分辩图片对的相似度同时可以保留对每个人的辨识度。
+\subsubsection{基于三元神经网络的检索方法}
+三元卷积神经网络是由三个完全一致的CNN共享所有的参数组成。模型的输入是一个三元图片组 $(x_a, x_p, x_n)$, 其中 $x_a$ 叫做基准图片(anchor image), $x_p$ 叫做正样本图片 （positve image）是和 $x_a$ 标签一致的的图片, $x_n$ 叫做负样本图片 （negative image）是和 anchor 标签不一致的图片。 经典的适用于三元神经网络的损失函数如下:
+\begin{equation}
+    \mathcal{L}_{\text {Triplet }}\left(x_a, x_p, x_n\right)=\max \left(0, m+\mathcal{D}\left(x_a, x_p\right)-\mathcal{D}\left(x_a, x_n\right)\right).
+    \label{eq:triplet}
+\end{equation}
+$m$ 是间隔参数, 一般由手动设定。
+$
+    \rho\left(x_i, x_j\right)=\left\|f\left(x_i ; \boldsymbol{\theta}\right)-f\left(x_j ; \boldsymbol{\theta}\right)\right\|_2^2
+$ 是欧式距离。 由公式可知, 损失函数会尽量拉进正样本对的距离并且使其距离比负样本对距离间隔比正样本对距离间隔超过 $m$, 从而使得损失最低。 \par
 
 \subsection{基于深度哈希的大规模检索}
-
 
 \section{本文章节安排与研究内容}

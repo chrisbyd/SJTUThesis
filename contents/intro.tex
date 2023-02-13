@@ -163,6 +163,7 @@ Tolias 等人提出R-MAC~\cite{tolias2015particular}在在特征图中分块进�
 其中 $y_i$ 是真实的标签, $\hat{p}_i$ 是模型输出的概率。$c$是总共的类的数量。而对于一张图片可能具有多个标签的检索数据集, 一般使用sigmoid函数激活, 交叉熵损失函数如下所示:
 \begin{equation}
     \text { Loss }=-\sum_{i=1}^c(y \log (\hat{p})+(1-y) \log (1-\hat{p}))
+    \label{eq:ce}
 \end{equation} \par
 2014年, Babenko~\cite{babenko2014neural} 提出第一个基于AlexNet微调的图像检索框架, 通过实验证实在图像数据集上进行重新的分类训练可以提高模型的检索性能。 \par
 
@@ -191,7 +192,7 @@ Tolias 等人提出R-MAC~\cite{tolias2015particular}在在特征图中分块进�
     \centering
     \includegraphics[width=15cm]{siamese_variant.pdf} \\
     \bicaption[基于孪生神经网络的图像检索架构]
-      {基与孪生CNN架构的微调图像检索架构。输入的图片以图片对的形式同时输入权重共享的CNN中, 使用对比损失来拉近相同标签图片的表征, 拉远不同标签的表征}
+      {基于孪生CNN架构的微调图像检索架构。输入的图片以图片对的形式同时输入权重共享的CNN中, 使用对比损失来拉近相同标签图片的表征, 拉远不同标签的表征}
       {The framework of siamese convolutional Neural Network based image retrieval with contrastive loss. The input images are organized in pairs. The pairwise contrastive loss is adopted to push away representations from negative image pairs and pull close those from positive pairs }
    \label{fig:siamesevariant}
 \end{figure}
@@ -219,7 +220,7 @@ $\mathbf{z}_S$ 和 $\mathbf{z}_{T}$ 是教师CNN和学生CNN的概率输出。�
 2016年, Lin 提出 PersonNet~\cite{wu2016personnet} 是基于VGG设计的孪生神经网络。与Fig.~\ref{fig:siamesevariant}不同在于, PersonNet 在两个卷积层后拼接, 然后通过卷积网络最后生成相似度分数。 \par
 随后, 2017年, zhedong等人~\cite{zheng2017discriminatively} 基于此架构设计一个用于行人检索的孪生网络架构。不同点在于,模型最后生成的是一个2维向量, 即图片对属于同一类以及不同类的概率。随后使用交叉熵损失函数来监督。 同时, 作者在每一个分支后面添加了分类损失函数, 使得模型再学会分辩图片对的相似度同时可以保留对每个人的辨识度。
 \subsubsection{基于三元神经网络的检索方法}
-三元卷积神经网络是由三个完全一致的CNN共享所有的参数组成。模型的输入是一个三元图片组 $(x_a, x_p, x_n)$, 其中 $x_a$ 叫做基准图片(anchor image), $x_p$ 叫做正样本图片 （positve image）是和 $x_a$ 标签一致的的图片, $x_n$ 叫做负样本图片 （negative image）是和 anchor 标签不一致的图片。 经典的适用于三元神经网络的损失函数如下:
+三元卷积神经网络是由三个完全一致的CNN共享所有的参数组成。模型的输入是一个三元图片组 $(x_a, x_p, x_n)$, 其中 $x_a$ 叫做基准图片(anchor image), $x_p$ 叫做正样本图片 （positve image）是和 $x_a$ 标签一致的的图片, $x_n$ 叫做负样本图片 （negative image）是和 anchor 标签不一致的图片。 经典的适用于三元神经网络的损失函数（Triplet Loss）如下:
 \begin{equation}
     \mathcal{L}_{\text {Triplet }}\left(x_a, x_p, x_n\right)=\max \left(0, m+\mathcal{D}\left(x_a, x_p\right)-\mathcal{D}\left(x_a, x_n\right)\right).
     \label{eq:triplet}
@@ -229,6 +230,268 @@ $
     \rho\left(x_i, x_j\right)=\left\|f\left(x_i ; \boldsymbol{\theta}\right)-f\left(x_j ; \boldsymbol{\theta}\right)\right\|_2^2
 $ 是欧式距离。 由公式可知, 损失函数会尽量拉进正样本对的距离并且使其距离比负样本对距离间隔比正样本对距离间隔超过 $m$, 从而使得损失最低。 \par
 
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=15cm]{tripletnet.pdf} \\
+    \bicaption[基于三元神经网络的检索方法]
+      {基于三元CNN架构的微调图像检索架构。输入的图片以三元图片组的的形式同时输入权重共享的CNN中, 三元图片组包含一个基准图片, 一个正样本, 一个负样本。框架使用三元损失函数进行监督学习。}
+      {The framework of triplet convolutional Neural Network based image retrieval with triplet loss. The input images are tuples, every tuple comprising an anchor, a positve image and a negative image. The network is trained with triplet loss in an end-to-end fashion.}
+   \label{fig:tripletnet}
+\end{figure}
+2016年, Gordo~\cite{gordo2016deep, gordo2017end} 提出基于最早的三元卷积神经网络用于图像检索。为了学习到对于检索最重要的局部信息, 文章额外训练了Regional Proposal Network~\cite{ren2015faster}用于检测图片中的目标区域, 同时基于R-MAC进行池化生成全局匹配的特征向量。\par
+2019年, Xiang~\cite{xiang2019multiple} 提出 MSCNet。 MSCNet 包含一个多显著度注意力模块(Multiple Saliency Block) 来学习卷积后的特征图的显著性掩码 （multiple saliency mask）。同时, 设计了一个基于Gram 矩阵的通道敏感性的模块来学习通道维度的权重, 最后基于三元损失函数监督进行模型微调。\par
+仅基于三元损失训练的检索框架可能会难以学到图片用于进行分类的识别力特征, 一系列工作开始在三元神经网络后插入一个用于分类的全连接神经网络, 并用三元损失函数和分类损失函数联合监督:
+\begin{equation}
+    \mathcal{L}_{\text {Joint }}=\lambda_1 \cdot \mathcal{L}_{\text {Triplet }}\left(x_{i, a}, x_{i, p}, x_{i, n}\right)+\lambda_2 \cdot \mathcal{L}_{C E}\left(\hat{p}_i, y_i\right).
+    \label{eq:triplece}
+\end{equation}
+其中$L_{CE}$ 如Eq.~\ref{eq:ce}所示。一个典型基于这个框架的工作有2020年Min~\cite{min2020two}等人提出的两阶段检索框架。第一阶通过Eq.~\ref{eq:triplece}进行同时的三元损失学习以及分类学习提高模型的表征能力。第二阶段基于Regional Proposal Network的输出以及第一阶段的网络, 新设计一个 Regional Generalized Mean Poolings (RGMP) 进行池化生成全局特征, 并且使用三元损失函数重训练。\par
+三元损失函数在图像检索领域取得了广泛的应用, 在许多任务上都超越仅基于分类或者成对的对比损失函数。然而, 在大数据集的场景下, 三元组的数据和数据集大小成三次方增长关系。 对所有三元组进行网络训练学习显然是不现实的任务。 2017年, Hermans~\cite{hermans2017defense} 提出一个基于挖掘难样本的三元损失函数 (hard-mining triplet loss， HMT):
+\begin{equation}
+    \begin{aligned}
+         \mathcal{L}_{\mathrm{HMT}}(\theta ; X) &=\overbrace{\sum_{i=1}^P \sum_{a=1}^K}^{\text {all anchors }}[m+\overbrace{\max _{p=1 \ldots K} \mathcal{D}\left(f_\theta\left(x_a^i\right), f_\theta\left(x_p^i\right)\right)}^{\text {hardest positive }} \\
+        & \underbrace{\left.-\min _{\substack{j=1 \ldots P \\
+        n=1 \ldots K}} \mathcal{D}\left(f_\theta\left(x_a^i\right), f_\theta\left(x_n^j\right)\right)\right]_{+}}_{\text {hardest negative }}. \\
+        \end{aligned}
+        \label{eq:hardtri}
+\end{equation}
+根据如上的公式所示, 损失函数使得与anchor相距最远的正样本比与anchor相距最近的负样本的距离还有$m$的间隔。 基于挖掘难样本的三元损失函数随后在图像检索的应用上, 如行人重识别~\cite{fu2018one, wang2018learning, sun2018beyond,rahimpour2017person,xu2018attention, fang2019bilinear} （person re-identification）和车辆重识别~\cite{chu2019vehicle, meng2020fine, meng2020parsing, liu2020beyond} （vehicle re-identification）中成为了最基础的通用的损失函数。\par
+尽管基于深度特征的图像检索相比于基于手工特征的检索方法取得了性能上的飞跃, 然而存储高维的实数向量特征对于大规模检索来说并不可行。现实场景下的应用图像数据库甚至可以达到千亿的级别, 这种基于实数向量特征的存储开销以及检索速度无法满足实际的需求。
 \subsection{基于深度哈希的大规模检索}
+为了满足超大规模图像检索对于检测速度以及存储的需求, 深度哈希技术被引入到图像检索领域。这一小节我们先介绍最近邻搜索以及近似最近邻搜索, 然后介绍了基于汉明编码以及量化编码的检索, 最后我们重点介绍了基于深度学习的哈希编码以及量化的方法进展。
+\subsubsection{最近邻搜索和次最近邻搜索}
+\textbf{最近邻搜索}是很多机器学习算法的基础, 旨在给定一个查询数据$q$ 在数据库$\mathcal{X}$中找到与$q$在某个距离度量下的最近的点 $NN(q)$:
+\begin{equation}
+    \mathrm{NN}(x)=\operatorname{argmin}_{x \in \mathcal{X}} \text{dist}(x, q).
+\end{equation}
+其中$\text{dist}(x, q)$ 是$x$ 和 $q$在某特定距离度量下的距离。通常对$x \in \mathbb{R}^d$, 可以使用 $l_s$ 范数, 比如 $l_2$ 即欧式距离:
+\begin{equation}
+    \|\mathbf{x}-\mathbf{q}\|_s=\left(\sum_{i=1}^d\left|x_i-q_i\right|^s\right)^{1 / s}.
+\end{equation}
+最简单的实现最近邻搜索的方法是暴力遍历搜索, 但是由于暴力遍历的计算复杂度是$O(d|\mathcal{X}|)$, 无法扩展到大规模检索的场景。对于低维数据的最近邻检索常用的还有 KD-Tree~\cite{friedman1977algorithm}, 可是当数据的维度较大时, KD-Tree 会退化成遍历搜索, 甚至性能会低于暴力搜索。 \par
+\textbf{近似最近邻搜索}是指以较大概率找到最相近的点，而不是完全精确的找到最近的点。对于$1 + \epsilon$ 近似最近邻搜索的正式定义为: 给定一个$q$, 从数据库中找到一个数据点满足:
+\begin{equation}
+    \text{dist}(q, x) \leq (1 + \epsilon)\text{dist}(q, x^*). 
+\end{equation}
+其中 $x^* = NN(q)$是真正的最近邻。常见的近似最近邻搜索方法可以分成三类: 基于哈希编码的方法~\cite{weiss2008spectral,weiss2012multidimensional,xu2013harmonious, salakhutdinov2009semantic, indyk1998approximate}, 基于量化的方法~\cite{jegou2010product, kalantidis2014locally, chen2010approximate, ge2013optimized} 以及基于图的方法~\cite{hajebi2011fast, malkov2014approximate, malkov2018efficient}。在本文中, 我们主要讨论前两种方法的应用。
+\subsubsection{哈希编码}
+基于哈希编码的近似最近邻方法将高维的数据映射压缩到一个低维的二进制向量, 也就是哈希码。 在图像检索中, 基于哈希的方法学习一个哈希函数 $h(.)$  将图片数据$x$转换成为 $K$ 个比特的二进制编码 $b$:
+\begin{equation}
+    h(x) = \text{sgn}(f(W^Tx + b)).
+\end{equation}
+其中 $f(.)$ 是一个任意的映射函数。$sgn(.)$ 是符号函数:
+\begin{equation}
+    \operatorname{sgn} (x) := \begin{cases}-1 & \text { if } x \leq 0,  \\ 1 & \text { if } x>0. \end{cases}
+\end{equation}
+$\operatorname{sgn} $将连续的向量二值化变成二进制哈希编码。经过$h(.)$ 得到的哈希编码需要保留图片$x$在的视觉相似性, 通过这样的方式, 原始图片的相似度可以通过得到的哈希编码的相似度进行刻画。在哈希编码常用的距离是汉明距离 (hamming distance):
+\begin{equation}
+    \mathcal{D}_h(b_i, b_j) = \sum_{k = 1}^{K} \delta \left[b_{ik} \neq b_{jk} \right].
+\end{equation}
+其中$K$是哈希编码的长度。汉明距离刻画了两个哈希码$b_i$和$b_j$的不同位的总量。 如果哈希码的取值是$\left\{0, 1 \right\}$, 则两个哈希码的距离也等于:
+\begin{equation}
+    \mathcal{D}_h(b_i, b_j)=\left\|b_i - b_j\right\|_1.
+\end{equation}
+如果哈希码的取值是 $\left\{-1, 1\right\}$, 则汉明距离也等于:
+\begin{equation}
+    \mathcal{D}_h(b_i, b_j)= \frac{1}{2} \left ( K - b_i^Tb_j \right ).
+\end{equation}
+汉明距离的计算可以用逐位的 xor 指令计算, 比基于实值向量的欧式距离速度显著快很多。
+对于哈希码的近似邻搜索方法一般有两种: \textbf{哈希查表法} （hash table lookup） 和 \textbf{哈希码排序} (hash code ranking)。 基于\textbf{哈希查表法}的搜索把哈希码一致的图片存在同一个哈希桶中。搜索时, 取出$q$对应哈希码所在的哈希桶中的所有图片。如果存储的是高维向量, 还可以将取出的高维向量重新计算欧式距离进行再排序。同时, 为了提高检索的召回率（recall), 一般也可以选取多个和检索的哈希码相近的哈希桶里的所有数据。 基于\textbf{哈希码排序}的方法则是直接将$q$对应的哈希码与数据库中所有的哈希码进行汉明距离计算, 然后进行排序。由于汉明距离的计算可以使用xor进行加速, 以及哈希码的存储开销远低于实值的向量, 这种方式虽然也是 $O(\left|\mathcal{X} \right|)$, 也可以在实际中被采用。 同时为了加快搜索速度, 传统基于倒排索引（inverted index）的加速方法也可以使用。 \par
+传统基于哈希编码的图像检索方法, 一般包含两个步骤: \textbf{基于手工特征提取}: 是用如 基于全局特征提取的方法 GIST或者SIFT这种全局特征提取的方法得到特征表征向量。\textbf{哈希函数学习}: 学习一个哈希函数把标签一致的特征向量映射成接近的哈希码, 典型的方法有 Locality Sensitive hashing~\cite{charikar2002similarity}, Spectral hashing~\cite{weiss2008spectral}, ICA hashing~\cite{he2011compact}, LDAHash~\cite{strecha2011ldahash}, Spec hashing~\cite{lin2010spec}, Spherical hashing~\cite{heo2012spherical}。
+\subsubsection{量化编码}
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=14cm]{vq.pdf} \\
+    \bicaption[向量量化的示意图]
+      {二维空间的向量量化示意图。黑色的+ 代表着输入向量, 红色的点代表着codeword, 被线分隔的代表者每个沃罗诺伊室。}
+      {The illustration of vector quantization in two-dimensional space. The black + denotes the input vector while the red circle represents the codeword. Cells separated by black lines are called voronoi cells. }
+   \label{fig:vectorquant}
+\end{figure}
+基于量化编码的哈希方法是近似邻搜索的另一个主要的研究方向。一个经典的量化方法是\textbf{向量量化} ~\cite{gray1984vector}是把特征空间离散成多个码字, 然后通过把向量映射成对应码字的索引进行压缩编码, 简单示意图如 Fig.~\ref{fig:vectorquant}。量化方法中最重要的是一个量化器 (quantizer)  $q$ 是一个函数，将一个 D 维的向量 $x \in \mathbb{R}^D$映射到另一个有限的向量集中的一个向量:
+\begin{equation}
+    q(x) \in \mathcal{C} = \left \{ c_i; i \in  \mathcal{I}\right\}.
+    \label{eq:vector}
+\end{equation}
+其中 $\mathcal{I} = 0 .... k-1$ 是一个有限的索引的集合。$c_i$ 叫做centroid或者叫做codeword。  而包含所有$k$个codeword的集合$\mathcal{C}$叫做codebook。 quantizer也可以换一种表述为$q(x) = d(e(x))$。 其中$e(.)$ 叫做 encoder, 把输入映射到一个索引$i$。 而 $d(i)$叫做decoder, 将索引$i$恢复成对应的codeword $c_i$。 所有的被映射到同一个索引$i$ 的原始向量的集合 $\mathcal{V}_i$叫做沃罗诺伊室 (voronoi cell):
+\begin{equation}
+    \mathcal{V}_i \triangleq\left\{x \in \mathbb{R}^D: q(x)=c_i\right\}.
+\end{equation}
+Quantizer的质量评估一般是由以下决定:
+\begin{equation}
+    E=\frac{1}{n} \sum_{\mathbf{x}}\|\mathbf{x}- d(e(x))\|^2.
+\end{equation}
+其中$E$也叫做量化误差 (quantization error)。\par
+基于向量量化的方法应用于高维数据有一个较大的缺陷。为了实现较小的量化误差, 需要巨量的centroids来对空间进行划分。 例如对 $64$位的量化编码, centroids的数量为 $k = 2^{64}$。学习这个quantizer需要巨量的数据, 同时假如存储一个centroid消耗2kb, 则存储所有的centroids需要$2^{45}$ GB的存储, 无法在现实大规模数据中使用。 2015年, J´egou等人提出\textbf{乘积量化}很好的解决了这个问题。\par
+在\textbf{乘积量化} (Product Quantization, PQ)中对于一个D维的向量$x \in \mathbb{R}^D$, 可以视为$M$个自向量的连接: $x = \left[ x^1,...x^m,...x^M \right]$。我们假设每个子向量$x^m$维度一致为$D/M$。在\textbf{乘积量化}中的quantizer $q(x) = \left[ q(x^1),...q(x^m),...q(x^M) \right]$, 其中 $q(x^m)$等同于向量量化中的quantizer, 如Eq.~\ref{eq:vector}。codebook 则是$M$个sub-codebook的笛卡尔乘积 $\mathcal{C} = \mathcal{C}^1 \times ... \times \mathcal{C}^M$。 每个codeword $c \in \mathcal{C}$则是$M$个sub-codeword的拼接 $c = \left[ c^1,...c^m,...c^M\right]$, 每个$c^m \in \mathcal{C}^m$。 对于乘积量化的量化误差定义为:
+\begin{equation}
+    \begin{aligned}
+        & \min _{\mathcal{C}^1, \ldots, \mathcal{C}^M} \sum_{\mathbf{x}}\|\mathbf{x}-d(e(\mathbf{x}))\|^2, \\
+        & \text { s.t. } \quad \mathbf{c} \in \mathcal{C}=\mathcal{C}^1 \times \ldots \times \mathcal{C}^M .
+        \label{eq:pq}
+        \end{aligned}
+\end{equation}
+其中encoder $e(.) = \left[ e^1(x^1) ,..., e^M(x^M)\right]$, 而每个子encoder $e^m$的计算如下式:
+\begin{equation}
+    e^m\left(\mathbf{x}^m\right)=\underset{k \in\{1, \ldots, K\}}{\arg \min }\left\|\mathbf{x}^m-c_k^m\right\|_2^2.
+\end{equation}
+Decoder $d(.)$则通过每个子encoder得到的索引,找到对应的sub-codeword并且进行拼接。这样原问题Eq.~\ref{eq:pq}可以通过解决多个子问题来解决, 而每个子问题则可以用k-means聚类进行计算求解。 \par
+由于乘积量化编码 PQ-code 包含 $M$个 1到k的整数索引, 所以PQ-code的存储消耗为$M\log_2K$ 比特。如果用32比特的PQ-code来存储128维度的浮点32位的实值特征向量, 则内存占用量只为原来128分之1。对于乘积量化编码的距离计算, 一般采取``非对称距离计算'' (Asymmetric Distance Computation)。对于一个查询的向量 $y$ 和数据库中的向量$x$和 $x$ 经过quantizer 重建的向量$\tilde{x}$, 非对称距离$\hat{\mathcal{D}}$计算如下所示:
+\begin{equation}
+    \mathcal{D}(\mathbf{y}, \mathbf{x})^2 \approx \tilde{\mathcal{D}}(\mathbf{y}, \mathbf{x})^2=d(\mathbf{y}, \tilde{\mathbf{x}})^2.
+\end{equation}
+为了加速ADC的计算通常会通过存储距离表（lookup table）然后再读取距离。对于每一个查询向量$y$, 对于其每一个子向量$y^m \in \mathbb{R}^{\frac{D}{M}} (m \in \left \{ 1,...,M  \right \})$。我们计算它与对应的sub-codebook里面的所有$K$个sub-codeword $c_k^m \in \mathcal{C}$的距离, 然后将其存储在距离查找表中:
+\begin{equation}
+    A(m, k)=d\left(\mathbf{y}^m, \mathbf{c}_k^m\right)^2
+\end{equation}
+之后对于$q$和每一个检索的向量$x$的非对称距离可以通过以下得到:
+\begin{equation}
+    \begin{aligned}
+        \tilde{\mathcal{D}}(\mathbf{y}, \mathbf{x})^2 & =\mathcal{D}(\mathbf{y}, \tilde{\mathbf{x}})^2 \\
+        & =\sum_{m=1}^M \mathcal{D}\left(\mathbf{y}^m, \mathbf{c}_{i^m}^m\right)^2=\sum_{m=1}^M A\left(m, i^m\right)
+    \end{aligned}
+\end{equation}
+其中$\mathcal{D}$是欧式距离。其中 $i = \left[i^1,...,i^M \right]$ 是 $x$对应的PQ-code。通过这种方式,只需要计算查找表$A$里的距离, 其余的距离计算如上可以通过查表解决。计算复杂度为$O(DK + MN)$, 其中$D$ 为向量的维度, $K$ 是sub-codebook的大小, $M$是sub-codebook的个数, $N$是数据库存储的数据的数量。同时PQ也可以和倒排索引等方法组合, 缩小搜索空间,提高检索效率。随后, 基于乘积量化的改进还有 optimizied product quantization~\cite{ge2013optimized}、additive quantization~\cite{martinez2016revisiting}、compositive quantization~\cite{zhang2014composite}, 以及 Iterative Quantization~\cite{gong2012iterative}。\par
+基于传统哈希编码的图像检索方式由于需要先通过手工特征提取的方法提取特征,  然后通过哈希编码或者量化编码的方法压缩特征并且加速检索。由于传统手工特征提取的方式很捕捉高级语义特征, 基于深度学习的哈希检索方法成为了大规模图像检索的主流。
+
+\subsubsection{基于深度学习的哈希}
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=16cm]{twoshash.pdf} \\
+    \bicaption[二阶段深度哈希框架]
+      {基于二阶段的深度哈希框架。第一阶段根据相似度矩阵$\mathcal{S}$学习对应的每张图片的哈希码$\mathcal{H}_i$。 第二阶段使用学习到的哈希码来监督训练卷积神经网络。}
+      {The deep hashing framework based on a two-stage hashing paradigm. In the first stage, the hashing code $H_i$ is learned given the similarity matrix $\mathcal{S}$. In the second stage, the learned hashing codes are used the supervise the convolutional neural network to ouput hashing codes in an end-to-end fashion.  }
+   \label{fig:twoshash}
+\end{figure}
+
+早期的基于深度学习的哈希架构是包含两个阶段,如图所示 Fig.~\ref{fig:twoshash}。 第一阶段先学习二进制哈希码，第二阶段再使用学习到的哈希码来监督训练神经网络提取特征。\par
+2014年, Xia~\cite{xia2014supervised}提出第一个基于深度学习的哈希框架。第一阶段通过建立一个$n \times q$的二进制矩阵$H$, 其中第$k$行 $H_k \in \left \{ -1, 1 \right \}$。 $H_k$代表图片$I_k$的二进制哈希码。$S$是相似度矩阵, $S_{ij} = 1$如果图片$I_i$和$I_j$是语义一致的图片对, 相反的话 $S_{ij} = -1$。通过优化一下的目标函数来求解哈希矩阵$H$:
+\begin{equation}
+    \min _H \sum_{i=1}^n \sum_{j=1}^n\left(S_{i j}-\frac{1}{q} H_i . H_{j .}^T\right)^2=\min _H\left\|S-\frac{1}{q} H H^T\right\|_F^2.
+\end{equation}
+其中$\left\| . \right\|$是Frobeniusf范数。第二阶段, 通过神经网络如图所示, 在神经网络后层增加全连接层通过第一阶段学习到的哈希码监督学习神经网络的特征提取。 \par
+
+
+2015年, Lai~\cite{lai2015simultaneous}提出了第一个端到端的深度哈希框架如图所示。这个框架把特征提取到哈希码的生成集合在一个深度神经网络中, 通过一个三元损失函数监督学习:
+\begin{equation}
+    \begin{aligned}
+        & \ell_{\text {triplet }}\left(\mathcal{F}(I), \mathcal{F}\left(I^{+}\right), \mathcal{F}\left(I^{-}\right)\right) \\
+        = & \max \left(0,\left\|\mathcal{F}(I)-\mathcal{F}\left(I^{+}\right)\right\|_2^2-\left\|\mathcal{F}(I)-\mathcal{F}\left(I^{-}\right)\right\|_2^2+1\right) \\
+        & \text { s.t. } \mathcal{F}(I), \mathcal{F}\left(I^{+}\right), \mathcal{F}\left(I^{-}\right) \in[0,1]^q.
+        \end{aligned}
+\end{equation}
+其中$\mathcal{F}(.)$是基于深度学习的哈希函数。$\left \| . \right \|$是用来代替计算汉明距离的 $l_2$范数。同时为了使得神经网络生成的哈希码尽量分布均匀, 文章还提出一个divide-and-conquer模块来分块通过如下的阈值化函数生成哈希码:
+\begin{equation}
+    g(s)=\left\{\begin{array}{rr}
+        0, & s<0.5-\epsilon \\
+        s, & 0.5-\epsilon \leq s \leq 0.5+\epsilon \\
+        1, & s>0.5+\epsilon
+        \end{array}\right.
+\end{equation} 
+其中$s$是神经网络经过$sigmoid$函数激活的输出概率。
+
+
+
+这个基于端到端的哈希方法在两阶段的哈希方法上取得了较显著的性能提升。随后, ~\cite{yao2016deep} 在这个架构的基础上加入了分类损失函数, 同时优化三元损失函数和分类函数来进行同步的深度特征学习和哈希码学习:
+\begin{equation}
+    \mathcal{L}_{\text {Class}}(\theta)=-\frac{1}{n}\left[\sum_{i=1}^n \sum_{j=1}^c I_{\left(y^i=j\right)} \log \frac{e^{\theta_j^T x^i}}{\sum_{l=1}^c e^{\theta_l^T x^i}}\right] \text {, }
+\end{equation}
+其中$\theta$是神经网络的参数。$y^i$是图片标签类别。\par
+2016年, Liu~\cite{liu2016deep}提出使用基于对比损失的哈希方法。为了将二值的限制条件加入神经网络中学习, 作者新增了一个量化损失函数:
+\begin{equation}
+    \begin{aligned}
+        L_r\left(\mathbf{b}_1, \mathbf{b}_2, y\right) & =\frac{1}{2}(1-y)\left\|\mathbf{b}_1-\mathbf{b}_2\right\|_2^2 \\
+        & +\frac{1}{2} y \max \left(m-\left\|\mathbf{b}_1-\mathbf{b}_2\right\|_2^2, 0\right) \\
+        & +\alpha\left(\left\|\left|\mathbf{b}_1\right|-\mathbf{1}\right\|_1+\left\|\left|\mathbf{b}_2\right|-\mathbf{1}\right\|_1\right).
+        \end{aligned}
+\end{equation}
+其中 $\mathbf{b}$是神经网络的输出, 通过$\left \| \mathbf{b} - 1 \right \|$使得输出尽量接近二进制码。\par
+
+
+随后, Zhu 等人提出DHN~\cite{zhu2016deep}基于一个贝叶斯学习框架损失函数:
+\begin{equation}
+    L=\sum_{s_{i j} \in \mathcal{S}}\left(\log \left(1+\exp \left(\left\langle\boldsymbol{z}_i^l, \boldsymbol{z}_j^l\right\rangle\right)\right)-s_{i j}\left\langle\boldsymbol{z}_i^l, \boldsymbol{z}_j^l\right\rangle\right).
+\end{equation}
+其中$\mathcal{S}$是图片的相似矩阵, $S_{ij} = 1$ 如果$I_i$和 $I_j$是语义接近的图片, 反之为0。为了降低量化损失, 作者还是用了一个使用了一个先验分布, 使得哈希码$h$在接近-1和1的时候概率尽量大:
+\begin{equation}
+    p\left(\boldsymbol{h}_i\right)=\frac{1}{2 \epsilon} \exp \left(-\frac{\left\|\left|\boldsymbol{h}_i\right|-\mathbf{1}\right\|_1}{\epsilon}\right).
+\end{equation}
+
+2017年, Cao等人提出HashNet~\cite{cao2017hashnet},  在DHN的基础上使用$\operatorname{tanh}(\beta z)$无限接近用于二值化神经网络输出的$\operatorname{sgn}$, 从而直接解决$sgn$不可导的问题:
+\begin{equation}
+    \lim _{\beta \rightarrow \infty} \tanh (\beta z)=\operatorname{sgn}(z).
+\end{equation}
+当逐步增大$\beta$, $\operatorname{tanh}(\beta z)$逐步接近于$sgn$, 如图所示。
+2021年, Tu等人提出基于Partial Softmax的哈希方法, 同时训练一个特征提取的卷积神经网络和一个类别映射的神经网络, 以及一个新的 Partial Softmax损失函数来监督求解。
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=14cm]{cnnh.pdf} \\
+    \bicaption[CNNH深度哈希网络的框架图]
+      {基于三元网络的深度哈希框架CNNH。输入的图片为三元组$x_a, x_p, x_n$。$x_a$为anchor图片, $x_p$ 为anchor的正样本, $x_n$为anchor的负样本。文章引入一个divide-and-encode模块, 将全连接输出向量分成多个部分, 然后分别生成哈希码。}
+      {The framework of triplet-network based hashing for CNNH. The input images are organized into triplets ($x_a, x_p, x_n$) where $x_a$ is the anchor, $x_p$ is the positve image for the anchor and $x_n$ is the negative. Then, output from the fully connected layer  is fed into the divide-and-encode network to generate hash code separately and independently.}
+   \label{fig:trihash}
+\end{figure}
+\subsubsection{基于深度学习的量化}
+第一个将量化学习引入深度图片检索的工作是\textbf{DQN}~\cite{yue2016deep}, 由清华大学的Cao~等人提出, 基础架构如图~\ref{fig:dqn}所示。\textbf{DQN} 采取深度卷积神经网络以及成对的对比损失函数提取图片特征, 随后使用乘积量化（Product Quantization）来将高位特征向量压缩成二进制哈希码。其中的乘积量化损失函数如下所示:
+\begin{equation}
+    \begin{gathered}
+        Q=\sum_{m=1}^M \sum_{i=1}^N\left\|\boldsymbol{z}_{i m}^l-\boldsymbol{C}_m \boldsymbol{h}_{i m}\right\|_2^2 \\
+        \left\|\boldsymbol{h}_{i m}\right\|_0=1, \boldsymbol{h}_{i m} \in\{0,1\}^K,
+        \end{gathered}
+    \label{eq:pqloss}
+\end{equation}
+其中$\mathbf{C}=\left[\mathbf{c}_{m 1}, \ldots, \mathbf{c}_{m K}\right]$ 代表codebook, 每个codebook包含$K$个codewords。 $\mathbf{z}_i=\left[\mathbf{z}_{i 1} ; \ldots ; \mathbf{z}_{i M}\right], i=1, \ldots, n$ 并且 $\mathbf{z}_{im}$是$\mathbf{z}_i$ 在第$m$个子空间的子向量。 所有的子空间的codewords 通过k-means聚类算法学习得到。 通过最小化乘积量化损失函数$Q$, 特征向量$\mathbf{z}$ 可以被量化成对应的二进制码$b$。\par
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=15cm]{dqn.pdf} \\
+    \bicaption[深度乘积量化的框架图]
+      {深度乘积量化网络的框架图。左侧是标准的卷积神经网络用语特征提取。成对的余弦损失函数用来进行保距的度量学习。同时采用了量化损失函数用来生成紧凑的量化编码。}
+      {The framework of deep quantization network for image retrieval. The left is a standard convolutional neural network for feature extraction. Pairwisie cosine loss is adopted for similarity preserving learning. Product quantization loss is further employed to generate compact binary codes.}
+   \label{fig:dqn}
+\end{figure}
+2018年, Liu 等人提出基于三元组的乘积量化\textbf{DTQ}~\cite{liu2018deep}。作者提出一个新颖的三元组选择算法, 在每一轮训练中动态随机生成难三元组样本输入到三元卷积神经网络中进行训练。同时, 作者提出一个新颖的基于弱正交性的三元乘积量化损失函数来生成二进制编码。弱正交性的引入可以降低codebook的冗余性以及控制卷积神经网络生成的深度特征的可量化度。\par
+2018, Yu ~\cite{yu2018product}等人提出乘积量化网络\textbf{PQN}来进行图像检索。不同于\textbf{DTQ}和\textbf{DQN}使用K-means算法无监督生成乘积量化编码中的每个sub-codebook中的codewords, \textbf{PQN}提出一个可导的软乘积量化层, 可以接入传统的卷积神经网络后进行端对端的训练, 同时作者还提出一个三元量化损失函数来直接监督学习深度特征以及codewords。\par
+随后, 基于\textbf{PQN}, Yu~\cite{yu2018generative} 提出一个基于生成对抗网络的端到端的乘积量化网络。其架构除了传统的卷积神经网络用来提取图片特征以外还包含了一个基于DCGAN~\cite{radford2015unsupervised}的架构。通过一个生成器 (Generator) 从前者提取生成的特征中生成图片使得判别器 (Discriminator) 无法分辨真实图片和生成器生成的图片从而使得卷积神经网络提取出有判别性的图片特征, 如下所示:
+\begin{equation}
+    \min _{\Theta_G} \max _{\Theta_D} \log (\mathbf{D}(I))+\log \left(1-\mathbf{D}\left(I^R\right)\right), 
+\end{equation}
+其中 $\Theta_G$ 和 $\Theta_D$是生成器和判别器的参数。 $I$是真实的图片, $I^R$ 是生成器生成的图片。同时, 作者也基于 \textbf{PQN}将乘积量化集成到端到端的网络训练中, 并且基于三元损失函数进行监督训练:
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=15cm]{spq.pdf} \\
+    \bicaption[无监督乘积量化的框架图]
+      {右侧是传统的对比学习的框架, 左侧是跨量化的对比学习框架。对于输入的图片$x$, 两个不同的变换函数 $(t, t^{\prime} \sim \mathcal{T})$ 将此图片变换成 $\tilde{x}_i$ 和 $\tilde{x}_j$。传统的对比学习通过一个映射例如全连接将深度描述符$\mathbf{x}$映射到$\mathbf{z}$, 然后在$\mathbf{z}$上进行对比学习。而跨量化的框架使用一个可导的量化层将$\mathbf{x}$映射到$\mathbf{z}$, 同时对比学习是在$\mathbf{x}$和$\mathbf{z}$中进行。}
+      {The right is the traditional contrastive learning framework. The left is the cross quantized contrastive learning framework for unsupervised image retrieval. On the right diagram, the projection head outputs $\mathbf{z}$ from the deep descriptor $\mathbf{x}$ and contrastive learning is conducted by comparing the similarity between projection outputs. On the left, the contrastive learning process is conducted between the deep descriptor $\mathbf{x}$ and the output from the quantization head $\mathbf{z}$.}
+   \label{fig:spq}
+\end{figure}
+
+
+\begin{equation}
+    L_t=\sum_{\mathbf{x}^a}\left[\mathcal{D}\left(\hat{q}\left(\mathbf{x}^a\right), \hat{q}\left(\mathbf{x}^p\right)\right)-\mathcal{D}\left(\hat{q}\left(\mathbf{x}^a\right), \hat{q}\left(\mathbf{x}^n\right)\right)+\alpha\right]_{+}.
+\end{equation}
+其中, $\mathcal{D}$是欧式距离, $\mathbf{x}^a$ 是anchor图片, $\mathbf{x}^p$是anchor的正样本,  $\mathbf{x}^n$是负样本照片。 \par
+
+2020年, Jang 等人提出 \textbf{SPQ}, 一个完全无监督的乘积量化网络来进行图像检索。如图~\ref{fig:spq}。作者采取对比学习将每张图片随机增强生成两张图片, 这两张图片当成一次训练中的正样本对, 图片和其他图片均视作负样本对。文中提出一个新的乘积量化损失函数:
+\begin{equation}
+    \ell_{(i, j)}=-\log \frac{\exp \left(\mathcal{S}(i, j) / \tau_{c q c}\right)}{\sum_{n=1}^{N_B} \mathbb{1}_{\left[n^{\prime} \neq j\right]} \exp \left(\mathcal{S}\left(i, n^{\prime}\right) / \tau_{c q c}\right)}.
+\end{equation}
+其中$\mathcal{S}(i, j)$ 是$\mathbf{\hat{x}}_i$和$\mathbf{\hat{z}}_j$的余弦相似度。$\mathbf{\hat{x}}_i$ 是未经过量化层量化的特征而$\mathbf{\hat{z}}_j$是经过乘积量化后的特征。$\tau_{c q c}$是一个温度超参数。$\mathbb{1}_{\left[n^{\prime} \neq j\right]} \in\{0,1\}$ 是一个示性函数, 当$n^{\prime} \neq j$的时候函数取值为 $1$。
+
 
 \section{本文章节安排与研究内容}
+\subsection{主要研究内容}
+如本章前文所述, 图像检索是计算机视觉以及多媒体检索领域一个核心的研究问题, 由于其在电商搜索, 智能安防, 智能医疗等众多领域的广泛应用而获得了国内外学者的广泛的关注。随着自媒体社交网络，计算机硬件，手机数码摄像技术等的发展, 图像数据库的数据总量也以爆炸性的速度急剧增长。为了满足大规模图像检索对于检索速度以及内存消耗的需求, 基于深度哈希的图像检索称为主流方法。本文主要研究了基于深度哈希以及量化的图像检索方法。在探究其在行人重识别, 车辆重识别的应用。同时, 受视觉Transformer在图像特征提取以及多个计算机视觉任务领域的优异表现的启发, 本文在通用的深度哈希图像检索领域提取基础网络架构创新, 以及用于监督的哈希损失的创新, 具有较高的理论意义以及广泛的工业应用价值。本文的主要内容与创新如下: \par
+
+首先, 本文对图像检索的一个典型应用-行人重识别问题进行了深入的探讨。传统的行人重识别问题针对单模态的数据,也就是检索的图片和数据库中的图片来自同一模态。而现实中的监控摄像头一般能同时在日间和夜间工作捕捉不同模态的行人照片,这使得跨模态行人重识别成为计算机视觉领域一个热门的研究课题。由于模态鸿沟的存在（Modality Gap）, 跨模态行人重识别比单模态行人重识别更具有挑战性。传统基于双流卷积神经网络的算法,很难学习到模态恒定（Modality-invariant）的特征。针对这一难点,本文创新性的基于自编码器（Autoencoder）设计了一个神经网络架构学习模态恒定以及外表恒定的特征。同时设计了适用于跨模态检索对其不同模态特征的损失函数,使得网络可以在动态创建的图片对上进行监督训练。我们在标准的跨模态重识别数据集上进行了训练以及测试,结果表明我们的算法可以取得优越的性能数据,证明了算法的有效性。 \par
+其次， 本文首次将深度哈希引入了大规模车辆检索的研究中。传统基于实值向量检索的车辆重识别算法虽然精度高,但是由于其存储效率低以及检索速度慢,无法适用于真实环境的大规模车辆检索。为了提高车辆检索的速度以及优化存储开销,本文第一个探索了深度哈希在大规模车辆检索中的应用。本文提出一个新型的离散哈希模块,通过同时使用传统的基于困难三元组的损失函数进行特征学习,以及离散哈希模块生成离散的汉明哈希码。为了优化离散的哈希架构,我们提出了一个交替优化算法来进行整个架构的优化。 本文在主流的车辆重识别数据集上进行了四种不同长度哈希码的精度测试,显著的超越了当前的普适的哈希算法。 \par
+进一步地， 为了优化深度哈希算法的表征能力,我们第一次探索一个不基于卷积神经神经网络的深度哈希框架。视觉转换器（Vision Transformer）是一种基于自注意力机制（self-attention）的新型的计算机视觉基础网络模型。本文提出了第一个完全基于视觉转换器的深度哈希框架,通过设计一个孪生视觉转换器架构,以及一个新型的双流特征学习的视觉转换器模块来进行细粒度表征学习。 同时,我们采取成对的基于贝叶斯的学习框架进行度量学习。本文在三个标准化的图像检索基准数据集上进行测试,实验效果表明该方法可以大幅度提升检索的性能。 \par
+最后 由于基于传统哈希编码的方法会带来较大的精度损失,本文探索一种基于乘积量化（Product Quantization）编码的深度哈希算法来提高检索性能。同时,本文提出第一个基于视觉转换器的乘积量化神经网络。为了进行细粒度的特征学习,考虑到视觉转换器的性能与采取的图片分块策略紧耦合的特点,本文设计了一个双支视觉转换器量化的支柱网络。同时,本文设计了一个基于排序损失的直接优化平均查准率 （Average Precision）的量化损失函数来进行度量学习。文章将乘积量化集成到端到端的神经网络优化中,取得了优异的性能表现。
+
+\subsection{本文的组织结构}
+本文一共分为六个章节。结构如下: \par
+第一章: 首先介绍了研究的主要背景以及研究意义, 同时介绍了大规模图像检索面临的挑战。随后主要介绍了图像检索的发展历史以及国内外的研究现状, 主要讲述了早期基于手工特征的图像检索, 以及深度学习的主干网络进展现状, 之后介绍了基于深度特征的图像检索，最后着重阐述基于深度哈希的检索方法的背景以及各种最新的研究技术。本章最后介绍文章的主要结构以及贡献。 \par
+第二章: 对图像检索的经典应用跨模态行人重识别问题进行了深入研究。设计了一个 MAENet 网络来对齐两个模态的特征, 并且设计了新型的跨模态检索的损失函数来进行监督训练, 在两个标准的跨模态重识别数据集上进行训练和测试证明了算法的有效性。 \par
+第三章: 第一次将深度哈希技术应用到车辆重识别领域, 设计一个新型的离散哈希模块, 架构可以同时通过基于困难三元组的损失函数进行特征学习, 以及离散的哈希模块来生成汉明哈希码, 实验证明该方法可以大幅度提升大规模车辆检索的性能。 \par
+第四章: 提出第一个基于视觉Transofmer的深度哈希架构, 通过基于孪生视觉Transformer以及一个新型的双流特征学习模块, 和基于贝叶斯学习的框架来进行细粒度表征学习。在标准化的图像检索数据集上取得了显著的性能提升。 \par
+第五章: 提出了一种第一个基于乘积量化的视觉Transformer用于大规模图像检索。设计了一个双支视觉Transformer 量化网络, 同时设计了一个基于排序损失的量化损失函数来直接进行量化编码学习, 在多个数据集上验证了该算法的效果。 \par
+第六章: 对本文的主要创新点与研究内容进行了总结, 并对未来的研究进行展望。 \par 
+本文的组织结构图如图~\ref{}所示。

@@ -12,7 +12,8 @@
 % 论文基本配置，加载宏包等全局配置
 
 \input{setup}
-
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
 \begin{document}
 
 %TC:ignore
@@ -41,7 +42,7 @@
 \listofalgorithms*
 
 % 符号对照表
-\input{contents/nomenclature}
+
 
 %TC:endignore
 
@@ -50,9 +51,12 @@
 
 % 正文内容
 \input{contents/intro}
-\input{contents/math_and_citations}
-\input{contents/floats}
-\input{contents/summary}
+\input{contents/sechapter}
+\input{contents/thirdchapter}
+\input{contents/fourthchapter}
+\input{contents/fifthchapter}
+\input{contents/sixthchapter}
+
 
 %TC:ignore
 
@@ -65,9 +69,9 @@
 % 附录中图表不加入索引
 \captionsetup{list=no}
 
-% 附录内容
-\input{contents/app_maxwell_equations}
-\input{contents/app_flow_chart}
+% % 附录内容
+% \input{contents/app_maxwell_equations}
+% \input{contents/app_flow_chart}
 
 % 结尾部分
 \backmatter
@@ -81,11 +85,11 @@
 % 盲审论文中，发表论文及科研成果等仅以第几作者注明即可，不要出现作者或他人姓名
 \input{contents/achievements}
 
-% 简历
-\input{contents/resume}
+% % 简历
+% \input{contents/resume}
 
-% 学士学位论文要求在最后有一个大摘要，单独编页码
-\input{contents/digest}
+% % 学士学位论文要求在最后有一个大摘要，单独编页码
+% \input{contents/digest}
 
 %TC:endignore
 

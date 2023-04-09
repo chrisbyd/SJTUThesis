@@ -3,19 +3,19 @@
 由于其检索的速度以及较低的内存开销, 深度哈希在大规模图像检索领域获得了广泛的关注。直到本章的算法提出前, 这个领域的所有的深度哈希模型都是基于卷积神经网络而设计, 例如, \textbf{ResNet}~\cite{he2016deep}, \textbf{AlexNet}等。在本章中, 受最近Vision Transformer架构的启发, 我们设计了第一个完全基于Vision Transformer的深度哈希架构来进行大规模的图像检索。具体来说, 我们的架构包含两个基本的模块: (1) 基于Vision Transformer (ViT), 我们设计了一个孪生Vison Transformer的主干架构来进行特征提取。为了学习细粒度的特征, 我们设计了一个双流特征学习的Transformer块来同时学习局部和全局的特征。(2)同时, 我们采取一个基于动态创建的相似度矩阵作为监督标签设计的贝叶斯学习框架来学习相似度保持的紧凑的二进制哈希编码。整个框架是通过一种端到端的方法同一训练。据我们所知, 本章提出的深度哈希框架是第一个完全不基于卷积神经网络的深度哈希学习框架。本章的算法在三个被广泛研究的标准数据集上进行全方面的测试, 数据集包括:~\textbf{CIFAR-10},~\textbf{NUSWIDE},~和~\textbf{IMAGENET}。数据结果证实了我们的方法和现阶段的先进的深度哈希算法比较具有极高的性能的优越性。在三个数据集上, 我们比较第二优越的算法分别获得了 $8.2\%$, $2.6 \%$和$12.7\%$的性能增长。
 
 \section{引言}
-近些年来, 由于互联网技术的普及, 以及计算机技术, 便携摄像的进步, 传感器技术, 云计算以及各种社交网络的兴起, 由无数终端用户生成的视频和图片数据以爆炸性的速度增长。如何对海量的数据进行检索是利用数据进行其他大规模商业应用的基石, 因此准确和高效进行数据检索的研究开始受到学术界和工业界研究人员的大规模的关注。在这些技术研究中, 大规模图像检索由于其广泛的工业界应用, 如推荐系统, 搜索引擎, 遥感检索系统等, 受到了日益增长的关注。 在所有解决这一具有挑战性的任务的方法中\cite{fu2017fast, ge2013optimized, jegou2010product, malkov2018efficient}, 基于二进制码的哈希方法取得了令人瞩目的成果。基于哈希的方法通过学习一个哈希函数, 将高维像素空间中的图片映射到低维的二进制汉明空间中, 其中在低维度的汉明空间的图片对应的哈希码需要保存原图片之间的视觉相似性。过去的这些你那, 一大批的基于哈希的方法被提出。 根据它们提取特征的方法, 我们可以将其简单的分成两个类别: (1) 基于手工特征提取的方法 (2) 基于深度学习的方法。\par
+近些年来, 由于互联网技术的普及, 以及计算机技术, 便携摄像的进步, 传感器技术, 云计算以及各种社交网络的兴起, 由无数终端用户生成的视频和图片数据以爆炸性的速度增长。如何对海量的数据进行检索是利用数据进行其他大规模商业应用的基石, 因此准确和高效进行数据检索的研究开始受到学术界和工业界研究人员的大规模的关注。在这些技术研究中, 大规模图像检索由于其广泛的工业界应用, 如推荐系统, 搜索引擎, 遥感检索系统等, 受到了日益增长的关注。 在所有解决这一具有挑战性的任务的方法中\cite{fu2017fast, ge2013optimized, jegou2010product, malkov2018efficient}, 基于二进制码的哈希方法取得了令人瞩目的成果。基于哈希的方法通过学习一个哈希函数, 将高维像素空间中的图片映射到低维的二进制汉明空间中, 其中在低维度的汉明空间的图片对应的哈希码需要保存原图片之间的视觉相似性。过去的年, 一大批的基于哈希的方法被提出。 根据它们提取特征的方法, 我们可以将其简单的分成两个类别: (1) 基于手工特征提取的方法 (2) 基于深度学习的方法。\par
 
 \begin{figure}[!htp]
     \centering
     \includegraphics[width=15cm]{04/subfig.pdf} \\
     \bicaption[基于孪生Vision Transformer的图片检索基本框架]
-      {对于一个图片对 (A, B), 我们将它们分割成固定大小的多个小图片块。然后将每个小块的像素转变成一个向量并且通过全连接将维成为一系列的嵌入表示。随后, 我们在这一系列的嵌入表征前添加一个随机初始化的向量作为分类嵌入。随后两串表征被输入进孪生Transformer模型并且通过一个哈希层生成$B$为的哈希向量。我们使用基于贝叶斯的学习框架来进行相似度保持学习。}
+      {对于一个图片对 (A, B), 我们将它们分割成固定大小的多个小图片块。然后将每个小块的像素转变成一个向量并且通过全连接降维成为一系列的嵌入表示。随后, 我们在这一系列的嵌入表征前添加一个随机初始化的向量作为分类嵌入。随后两串表征被输入进孪生Transformer模型并且通过一个哈希层生成$B$为的哈希向量。我们使用基于贝叶斯的学习框架来进行相似度保持学习。}
       {For an image pair (A,B), we cut them into several patches. Then every patch is flattened and projected to a fix-sized embedding with a fully connected layer, resulting in a sequence of embeddings. Subsequently, we add a classification token in the front of each sequence. Then, two sequences are fed into the Siamese transformer architecture. At last, we add a hash layer projecting the feature into B-bit hash vectors. The Bayesian learning module is employed to preserve the similarity in the \textit{Hamming} space for each pair. }
    \label{fig:subfig}
 \end{figure} 
 
-基于手工特征的浅层次哈希方法一般是通过基于人工设计的视觉特征描述符来进行哈希函数的学习~\cite{charikar2002similarity, indyk1997locality, weiss2008spectral}, 例如 \textbf{GIST}~\cite{oliva2001modeling}等。经典的浅层次哈希方法有~\textbf{LSH}~\cite{indyk1997locality}, 其主要思想是将相似的高维数据以比较大的概率被映射到相近的哈希编码中。然而由于基于手工提取的特征向量其实并不能准确的刻画保存原图片的有区别性的信息, 这导致了基于手工特征的哈希算法有一道无法逾越的性能鸿沟。为了减轻这个问题的影响, 随着AlexNet~\cite{}的提出, 基于深度学习的特征提取方法开始成为计算机视觉领域的主流。基于深度学习的模型~\cite{dosovitskiy2020image, russakovsky2015imagenet}相比较基于手工特征的方法通常而言可以获得显著的性能提升。基于深度学习的哈希学习方法一般包含两个阶段。 第一阶段致力于基于深度卷积神经网络, 例如 \textbf{AlexNet}等, 学习有判别性的特征。第二阶段包含包含设计各种非线性的函数来将连续性的神经网络输出转化成固定的哈希长度的二进制哈希码, 并且通过各种度量学习的损失函数~\cite{cakir2019hashing,cao2018deep,erin2015deep,gong2012iterative, li2015feature}来在汉明空间保存其对应的图片的视觉相似性。 \par
-最近, Transformer~\cite{vaswani2017attention}模型展示了其在自然语言领域的卓越性能~\cite{brown2020language, devlin2018bert}。随后, Google设计了 Vision Transformer~\cite{dosovitskiy2020image}, 一种基于 Transformer的变种, 正式将Transformer引入进计算机视觉领域。Vision Transformer 开始在各个计算机视觉任务上超越传统基于卷积神经网络的模型(例如, 图像分类~\cite{dosovitskiy2020image}, 行人重识别~\cite{he2021transreid},等)。如图~\ref{fig:subfig}所示, Vision Transformer 通过首先将输入的图片分割成一系列的2D图片块。 随后, 将图片块转换成向量并且通过可以学习的转换矩阵来将向量将维度成低维度的特征表示。 随后, 一系列的输入向量可以被输入进标准的Transformer的编码器架构来学习特征表示。受Vision Transformer的高性能表现的启发, 我们思考完全基于Vision Transformer设计一个深度哈希框架的可行性。\par
+基于手工特征的浅层次哈希方法一般是通过基于人工设计的视觉特征描述符来进行哈希函数的学习~\cite{charikar2002similarity, indyk1997locality, weiss2008spectral}, 例如 \textbf{GIST}~\cite{oliva2001modeling}等。经典的浅层次哈希方法有~\textbf{LSH}~\cite{indyk1997locality}, 其主要思想是将相似的高维数据以比较大的概率被映射到相近的哈希编码中。然而由于基于手工提取的特征向量其实并不能准确的刻画保存原图片的有区别性的信息, 这导致了基于手工特征的哈希算法有一道无法逾越的性能鸿沟。为了减轻这个问题的影响, 随着AlexNet~\cite{alexnet}的提出, 基于深度学习的特征提取方法开始成为计算机视觉领域的主流。基于深度学习的模型~\cite{dosovitskiy2020image, russakovsky2015imagenet}相比较基于手工特征的方法通常而言可以获得显著的性能提升。基于深度学习的哈希学习方法一般包含两个阶段。 第一阶段致力于基于深度卷积神经网络, 例如 \textbf{AlexNet}等, 学习有判别性的特征。第二阶段包含设计各种非线性的函数来将连续性的神经网络输出转化成固定的哈希长度的二进制哈希码, 并且通过各种度量学习的损失函数~\cite{cakir2019hashing,cao2018deep,erin2015deep,gong2012iterative, li2015feature}来在汉明空间保存其对应的图片的视觉相似性。 \par
+最近, Transformer~\cite{vaswani2017attention}模型展示了其在自然语言领域的卓越性能~\cite{brown2020language, devlin2018bert}。随后, Google设计了 Vision Transformer~\cite{dosovitskiy2020image}, 一种基于 Transformer的变种, 正式将Transformer引入进计算机视觉领域。Vision Transformer 开始在各个计算机视觉任务上超越传统基于卷积神经网络的模型(例如, 图像分类~\cite{dosovitskiy2020image}, 行人重识别~\cite{he2021transreid},等)。如图~\ref{fig:subfig}所示, Vision Transformer 通过首先将输入的图片分割成一系列的2D图片块。 随后, 将图片块转换成向量并且通过可以学习的转换矩阵来将向量降维成低维度的特征表示。 随后, 一系列的输入向量可以被输入进标准的Transformer的编码器架构来学习特征表示。受Vision Transformer的高性能表现的启发, 我们思考完全基于Vision Transformer设计一个深度哈希框架的可行性。\par
 在本章中, 我们基于Transformer 设计了一个新型的深度哈希框架-\textbf{TransHash}, 这是有史以来第一个不基于卷积神经网络作为主干网络来进行特征学习的深度哈希架构。具体而言, 为了进行成对的哈希学习, 我们设计了一个孪生多粒度Vision Transformer主干网络 (Multi-Granular Vision Transformer, MGVT)。它包含了两个完全一致的多粒度学习的Transformer网络, 并且这两个网络是完全共享所有参数~\cite{bromley1993signature}。具体而言, 为了进行多粒度的学习, 我们受\textbf{TransReID}~\cite{he2021transreid}所启发, 我们在传统的Vision Transformer的最后一层上设计了一个双流特征学习机制, 将最后一个Transformer块设计成两个并行的分支。对于第一个分支, 它是用来进行全局特征的学习。对于并行的第二个分支, 我们将前一个Transformer块的输出序列进行重新分组成$K$个序列组。这$K$个序列组的序列前都被添加了共享的用于分类的嵌入表征。随后, 将这$K$个序列分别输入进最后一个Transformer层来输出$K$个局部的特征。通过这样的方法, 我们可以通过全局和局部的网络架构设计同时学习到粗粒度的全局特征以及细粒度的局部特征。同时, 我们的模型还可以取得和Lai等人的工作~\cite{lai2015simultaneous}相似的效果。通过将哈希码的表征变成多个分支的哈希码的拼接, 类似于Lai等人提出的 divide-and-encode模块, 可以降低哈希码的冗余性。为了在特征空间保持原来图片的语义相似性, 我们提出采取基于贝叶斯学习的框架来将相似的图片对在特征空间中尽量拉近, 而将不相似的图片在特征空间中尽量拉远。最终, 由于基于卷积神经网络学习到的特征表示是连续的, 我们需要采用\textit{Sign}函数从将连续的表示生成离散的二进制哈希码。但是, 由于离散的哈希码$h$和连续的特征表示$f$之间存在鸿沟, 也就是``量化误差''~\cite{zhu2016deep}的存在, 直接在测试阶段使用\textit{sign}函数只能取得次优的检索性能。为了缩小量化误差, 减轻在测试阶段的性能损失, 我们将相似度保持学习重新规划成一个受限制的优化问题。具体做法是在之前的贝叶斯学习框架后加上一个科西分布量化损失来在训练阶段缩短连续的特征表示和二进制哈希码之间的差距。\par
 总结而言, 本章做出了以下的创新与贡献:
 \begin{enumerate}
@@ -27,9 +27,9 @@
 \section{相关工作}
 在本小节,~我们介绍与本章工作相关的其他工作。我们将相关的工作分为三个类别: (1) 在计算机视觉领域卷积神经主干网络的发展 (2) 在计算机视觉领域的Transformer的进展 (3)图像检索的深度哈希相关工作。
 \subsection{计算机视觉领域的卷积神经网络发展}
-卷积神经网络一开始是由LeCun 等人~\cite{cnnoriginal}提出来进行手写数字的自动识别。它提出了卷积核来对图片像素在空间区域的联系进行建模从而提取特征, 并且取得了显著的识别性能。然而直到2012年, \textbf{AlexNet}~\cite{alexnet}的提出, 基于卷积神经网络的方法才开始成为计算机视觉领域绝大部分任务的主要模型, 例如``实例分割''~\cite{he2016deep, ren2017end}, ``图像修复''~\cite{yeh2017semantic,yu2019free}, ``深度哈希''~\cite{cao2018deep, cao2017hashnet}, ``行人重识别''~\cite{chen2020maenet, hermans2017defense, ye2018hierarchical, ye2018visible} 等等。为了提高卷积神经网络的表征能力, 一系列更加深更加有效的卷积神经网络被提出。2014年, Simonyan and Zisserman~\cite{simonyan2014very} 提出了 VGG 网络。 VGG 从网络结构深度的角度来提升CNN的性能。通过使用3*3的小尺寸卷积核作为所有卷积层的标准, VGG 包括了最低11层到最高19层 （VGG-11、 VGG-13、 VGG-16、 VGG-19）等变种, 证明了提高模型的深度可以更好的学习图像中的视觉特征。 随后 GoogLeNet~\cite{szegedy2015going} 提出同时学习多尺度的图像特征。通过使用同时使用不同大小的卷积核（5*5、3*3、1*1）对图像进行卷积操作, 以及在通道维度进行拼接, 可以学习不同粒度的图像特征。在卷积神经网络发展的同时, 研究人员发现一味的增加卷积神经网络的深度在某个时候不能增加模型的性能, 甚至会导致梯度消失或者梯度爆炸等问题, 从而导致模型退化。为了解决这个难题, 2015年, Kaiming~\cite{he2016deep} 提出~\textbf{ResNet}, 通过恒等映射和残差映射来解决梯度消失的问题。从此,~\textbf{ResNet}开始成为计算机视觉领域的一个标准的基础主干神经网络。尽管基于卷积神经网络的模型目前任然在视觉领域占据主要的部位, 最近Vision Transformer的出现以及开启了采取Transformer的架构来进行一系列的视觉任务的可能性。本章提出的算法在当时是第一批利用Transformer来解决经典计算机视觉领域任务的工作。\par
+卷积神经网络一开始是由LeCun 等人~\cite{cnnoriginal}提出来进行手写数字的自动识别。它提出了卷积核来对图片像素在空间区域的联系进行建模从而提取特征, 并且取得了显著的识别性能。然而直到2012年, \textbf{AlexNet}~\cite{alexnet}的提出, 基于卷积神经网络的方法才开始成为计算机视觉领域绝大部分任务的主要模型, 例如``实例分割''~\cite{he2016deep, ren2017end}, ``图像修复''~\cite{yeh2017semantic,yu2019free}, ``深度哈希''~\cite{cao2018deep, cao2017hashnet}, ``行人重识别''~\cite{chen2020maenet, hermans2017defense, ye2018hierarchical, ye2018visible} 等等。为了提高卷积神经网络的表征能力, 一系列更加深更加有效的卷积神经网络被提出。2014年, Simonyan and Zisserman~\cite{simonyan2014very} 提出了 VGG 网络。 VGG 从网络结构深度的角度来提升CNN的性能。通过使用3*3的小尺寸卷积核作为所有卷积层的标准, VGG 包括了最低11层到最高19层 （VGG-11、 VGG-13、 VGG-16、 VGG-19）等变种, 证明了提高模型的深度可以更好的学习图像中的视觉特征。 随后 GoogLeNet~\cite{szegedy2015going} 提出同时学习多尺度的图像特征。通过使用同时使用不同大小的卷积核（5*5、3*3、1*1）对图像进行卷积操作, 以及在通道维度进行拼接, 可以学习不同粒度的图像特征。在卷积神经网络发展的同时, 研究人员发现一味的增加卷积神经网络的深度在某个时候不能增加模型的性能, 甚至会导致梯度消失或者梯度爆炸等问题, 从而导致模型退化。为了解决这个难题, 2015年, Kaiming~\cite{he2016deep} 提出~\textbf{ResNet}, 通过恒等映射和残差映射来解决梯度消失的问题。从此,~\textbf{ResNet}开始成为计算机视觉领域的一个标准的基础主干神经网络。尽管基于卷积神经网络的模型目前任然在视觉领域占据主要的部分, 最近Vision Transformer的出现开启了采取Transformer的架构来进行一系列的视觉任务的可能性。本章提出的算法在当时是第一批利用Transformer来解决经典计算机视觉领域任务的工作。\par
 \subsection{计算机视觉领域的Transformer发展}
-Transformer最初是有2017年Google提出~\cite{vaswani2017attention}, 在自然语言处理领域进行序列数据的处理。从那时开始, 许多科研人员就开始在研究Transformer架构在计算机视觉领域的效果。最初的做法是利用Transformer处理由卷积神经网络提取的序列化的特征图~\cite{carion2020end, girdhar2019video, xie2021segmenting}。在2020年, Google提出了\textbf{Vision Transformer} (ViT) 通过将图片数据分块然后通过线性映射转换成一个序列的向量然后直接输入进传统的Transformer里通过在大型数据集上预训练后,就可以在多个任务如图像分类等领域取得了接近\textbf{ResNet}的性能。随后不同的ViT的变种开始在计算机视觉多个任务取得超越\textbf{ResNet}的性能效果。DeiT~\cite{touvron2021training}~是一个证实Transformer可以在中等大小的数据集上进行预训练并且取得较有的性能。DeiT通过使用CNN的输出当做一个教师模型, 通过蒸馏学习(distillation learning)来帮助训练自身的Transformer架构。在输入的嵌入表征前, 它们添加了一个蒸馏表征, 然后通过交叉熵损失和蒸馏损失进行训练。随后 Token-to-Token (T2T) Vision Transformer~\cite{yuan2021tokens}递归的将临近的token融合成一个token来降低序列的长度并且对于空间中的较远的联系进行建模。 Transformer in Transformer~\cite{han2021transformer}提出在两种层面上进行其中关键的注意力操作: (1) patch 层面, 与传统的ViT类似。 (2) 局部子patch层面, 通过将多个patch组合成一个大的子patch进行自注意力机制计算。通过这样的机制, 模型可以学习到更加细粒度的特征,~取得了更加优异的性能。由于ViT中d的自注意力机制的计算复杂度对于输入的序列长度而言是 $O(n^2)$, 这极大的限制了模型的可应用性。Pyramid ViT (PVT)~\cite{wang2021pyramid} 提出一个分层次的ViT设计, 通过逐步将整合临近的token缩小自注意力机制计算的序列长度。随后2021年的ICCV最佳论文~Swin Transformer~\cite{liu2021swin}通过将输入的图片块分成一个个限定大小窗口, 并且只在窗口内进行自注意力的计算。为了建立不同窗口内的patch之间的联系, 作者提出了一个Shifted Window分割机制, 在连续的两个Transformer层之间进行基于window的自注意力计算和shifted window的自注意力计算。Swin Transformer 在多个计算机视觉领域取得超越传统基于\textbf{ResNet-50}的模型, 开始成为取代卷积神经网络的计算机视觉主干深度神经网络。随后, CrossFormer
+Transformer最初是有2017年Google提出~\cite{vaswani2017attention}, 在自然语言处理领域进行序列数据的处理。从那时开始, 许多科研人员就开始在研究Transformer架构在计算机视觉领域的效果。最初的做法是利用Transformer处理由卷积神经网络提取的序列化的特征图~\cite{carion2020end, girdhar2019video, xie2021segmenting}。在2020年, Google提出了\textbf{Vision Transformer} (ViT) 通过将图片数据分块然后通过线性映射转换成一个序列的向量然后直接输入进传统的Transformer里通过在大型数据集上预训练后,就可以在多个任务如图像分类等领域取得了接近\textbf{ResNet}的性能。随后不同的ViT的变种开始在计算机视觉多个任务取得超越\textbf{ResNet}的性能效果。DeiT~\cite{touvron2021training}~是一个证实Transformer可以在中等大小的数据集上进行预训练并且取得较有的性能。DeiT通过使用CNN的输出当做一个教师模型, 通过蒸馏学习(Distillation Learning)来帮助训练自身的Transformer架构。在输入的嵌入表征前, 它们添加了一个蒸馏表征, 然后通过交叉熵损失和蒸馏损失进行训练。随后 Token-to-Token (T2T) Vision Transformer~\cite{yuan2021tokens}递归的将临近的token融合成一个token来降低序列的长度并且对于空间中的较远的联系进行建模。 Transformer in Transformer~\cite{han2021transformer}提出在两种层面上进行其中关键的注意力操作: (1) patch 层面, 与传统的ViT类似。 (2) 局部子patch层面, 通过将多个patch组合成一个大的子patch进行自注意力机制计算。通过这样的机制, 模型可以学习到更加细粒度的特征,~取得了更加优异的性能。由于ViT中的自注意力机制的计算复杂度对于输入的序列长度而言是 $O(n^2)$, 这极大的限制了模型的可应用性。Pyramid ViT (PVT)~\cite{wang2021pyramid} 提出一个分层次的ViT设计, 通过逐步将整合临近的token缩小自注意力机制计算的序列长度。随后2021年的ICCV最佳论文~Swin Transformer~\cite{liu2021swin}通过将输入的图片块分成一个个限定大小窗口, 并且只在窗口内进行自注意力的计算。为了建立不同窗口内的patch之间的联系, 作者提出了一个Shifted Window分割机制, 在连续的两个Transformer层之间进行基于window的自注意力计算和shifted window的自注意力计算。Swin Transformer 在多个计算机视觉领域取得超越传统基于\textbf{ResNet-50}的模型, 开始成为取代卷积神经网络的计算机视觉主干深度神经网络。随后, CrossFormer
 也基于一个分层次的Pyramid架构提出short-distance 注意力和long-distance 注意力, 在降低计算复杂度的同时可以同时捕捉局部和全局的特征信息。RegionVit~\cite{chen2021regionvit} 提出一个regional-to-local的注意力机制来对层次性特征进行编码。\par
 除了上述基于ViT的基础主干网络的发展, 基于ViT的计算机视觉任务的应用也以惊人的速度增长。例如在``目标检测''任务中, Fang 等人提出~\cite{fang2021you}一个完全基于Transformer的目标检测框架。它将ViT中的用于分类的token替换成了多个可以学习的目标查询的token。在``图像分割''领域, Segmentation Transformer (SETR)~\cite{zheng2021rethinking} 使用ViT作为编码器, 使用两个解码器进行逐步的上采样。随后 SegFormer~\cite{strudel2021segmenter}~使用一个基于Pyramid ViT的编码器和一个简单的基于MLP的解码器来得到分割的掩膜。同样, Transformer在低层次视觉任务方面也取得了卓越的表现。在``图像处理''方面, chen 等人提出了一个基于预训练的Transformer模型。它可以进行多种图像修复的工作, 例如图像超分, 图像去噪, 等。除了在传统2D视觉领域, Transformer在3D计算机视觉方向也取得了令人瞩目的效果。3D点云的排序不变的特征天然适合Transformer的计算特性。2021年, Zhao 等人提出了 Point Transformer~\cite{zhao2021point} 提出了一个新型的点云Transformer层来对3D点的局部邻接信息进行自注意力计算。这个Transformer层基于向量自注意力机制, 其中的注意力权重是通过向量来表示。
 Guo等人~\cite{guo2021pct}提出Pct来显式的对局部的3D结构进行编码, 并且在3D形状分类, 分割等领域取得了较好的性能表现。Lin等人提出一个Mesh Transformer~\cite{lin2021end}通过2D的图片重建3D得行人姿态以及进行网格重建, 这是第一个基于Transformer的3D行人重建的工作, 并且也取得了较好的结果。\par
@@ -45,13 +45,13 @@ Vision Transformer在此时仍然处于研究的初期, 并且由于其优越的
 \end{figure} 
 
 \subsection{基于哈希的图像检索}
-深度哈希在大规模高效图像检索领域近年来获得了越来越多的关注~\cite{chen2021dvhn, ge2013optimized, gong2012iterative, heo2012spherical, indyk1997locality, yu2018product, weiss2008spectral}。根据它们提取特征的方法, 我们可以将它们分成两个类别: ``浅哈希方法''和``基于深度学习的哈希方法''。 \par
+深度哈希在大规模高效图像检索领域近年来获得了越来越多的关注~\cite{chen2021dvhn, ge2013optimized, gong2012iterative, heo2012spherical} \cite{indyk1997locality, yu2018product, weiss2008spectral}。根据它们提取特征的方法, 我们可以将它们分成两个类别: ``浅哈希方法''和``基于深度学习的哈希方法''。 \par
 传统的浅哈希方法一般基于手工设计的特征来学习一个哈希函数将图片映射到二进制哈希码。一个典型的例子是~ Locality Sensitive Hash (LSH)~\cite{indyk1997locality}。LSH 致力于寻找一个哈希族使得相似的对象经过哈希函数产生的哈希碰撞要比不相似的概率要高。随后, Charikar等人~\cite{charikar2002similarity}提出另一个基于LSH的变种, SIMHASH, 其针对在欧式空间中的余弦相似性。 尽管这些基于手工特征的方法取得了一定程度的成功。 但是当应用到现实的数据时, 由于图片具有较多外观变化, 基于手工设计的特征并不能提取到有判别性的信息, 从而导致了哈希精度的不足。\par
-基于这一点, 基于深度卷积神经网络提取特征进行哈希学习的方法研究取得了极大的进展~\cite{cao2017hashnet, fan20deep, li2015feature, liu2016deep, zhu2016deep}。2014年, Xia~\cite{xia2014supervised} 提出第一个基于深度学习的监督哈希框架。它提出一种两阶段哈希的方法先将相似度矩阵$S$ 分解成汉明矩阵$H$ 和 $H^T$的乘积, 其中 $H$的每一行代表一个训练图片数据的哈希编码。接着, 卷积神经网络通过第一阶段学习到的哈希码作为监督信号来进行监督训练。Lai等人提出了第一个端到端的深度哈希框架通过三元损失函数以及一个降低哈希码的荣誉性的模块来同时进行特征学习以及二进制哈希码的生成。随后, Zhu~\cite{liu2016deep}提出一个基于贝叶斯学习的框架通过成对的图片数据进行相似度保留学习。HashNet~\cite{cao2017hashnet} 提出使用不用,Cao~\cite{cao2018deep} 随后$tanh(\beta z)$函数, 通过逐步的增大参数$\beta$, 使得神经网络的输出接近二值化, 从而减少测试阶段和训练阶段的量化误差。2018年, Cao等人提出 DCH~\cite{cao2018deep} 使用一个Cauchy分布来替代DHN框架中的sigmoid函数来生成两个图片对的相似度评分。Fan 随后提出 DPN~\cite{fan2020deep} 通过一个深度极化损失（polarized loss）来监督模型进行二进制哈希码的生成, 使得不再需要加入常用的量化损失函数来控制模型的输出和量化后的二进制码的误差。传统的深度哈希算法均是基于卷积神经网络而构造。卷积神经网络由于加入了较多对于图片模块的先验信息, 例如图片空间区域接近的地方信息类似, 即具有空间局部性, 导致有较高的归纳偏置~(inductive bias)。而Transformer则归纳偏置则较小, 在大量数据进行训练的条件下可以取得优异的性能表现。本章作为第一个探究完全基于Transformer的深度哈希方法, 取得了相比较卷积神经网络更加令人瞩目的性能。
+基于这一点, 基于深度卷积神经网络提取特征进行哈希学习的方法研究取得了极大的进展~\cite{cao2017hashnet, fan20deep, li2015feature, liu2016deep, zhu2016deep}。2014年, Xia~\cite{xia2014supervised} 提出第一个基于深度学习的监督哈希框架。它提出一种两阶段哈希的方法先将相似度矩阵$S$ 分解成汉明矩阵$H$ 和 $H^T$的乘积, 其中 $H$的每一行代表一个训练图片数据的哈希编码。接着, 卷积神经网络通过第一阶段学习到的哈希码作为监督信号来进行监督训练。Lai等人提出了第一个端到端的深度哈希框架通过三元损失函数以及一个降低哈希码的荣誉性的模块来同时进行特征学习以及二进制哈希码的生成。随后, Zhu~\cite{liu2016deep}提出一个基于贝叶斯学习的框架通过成对的图片数据进行相似度保留学习。HashNet~\cite{cao2017hashnet} 提出使用$tanh(\beta z)$函数, 通过逐步的增大参数$\beta$, 使得神经网络的输出接近二值化, 从而减少测试阶段和训练阶段的量化误差。2018年, Cao等人提出 DCH~\cite{cao2018deep} 使用一个Cauchy分布来替代DHN框架中的sigmoid函数来生成两个图片对的相似度评分。Fan 随后提出 DPN~\cite{fan2020deep} 通过一个深度极化损失（Polarized Loss）来监督模型进行二进制哈希码的生成, 使得不再需要加入常用的量化损失函数来控制模型的输出和量化后的二进制码的误差。传统的深度哈希算法均是基于卷积神经网络而构造。卷积神经网络由于加入了较多对于图片模块的先验信息, 例如图片空间区域接近的地方信息类似, 即具有空间局部性, 导致有较高的归纳偏置~(Inductive Bias)。而Transformer则归纳偏置则较小, 在大量数据进行训练的条件下可以取得优异的性能表现。本章作为第一个探究完全基于Transformer的深度哈希方法, 取得了相比较卷积神经网络更加令人瞩目的性能。
 
 \section{基于Vision Transformer的深度哈希算法}
 \subsection{本章主要符号定义以及问题定义}
-在本章中, 我们使用书法大写字母 (calligraphic uppercase), 例如 $\mathcal{H}$ 来表示映射函数。我们使用粗体大写字母 (Bold-face uppercase) 如 $\mathbf{T}$ 来代表集合. 粗体小写字母如 $\mathbf{b}$在全章中代表向量。我们使用斜大写字母 (Italic uppercase)来代表图片, 如 $\textit{I}$。 同时, 在全章中, sign激活函数直接由 $\textit{sign}$ 来表示。\par
+在本章中, 我们使用书法大写字母 (Calligraphic Uppercase), 例如 $\mathcal{H}$ 来表示映射函数。我们使用粗体大写字母 (Bold-face Uppercase) 如 $\mathbf{T}$ 来代表集合. 粗体小写字母如 $\mathbf{b}$在全章中代表向量。我们使用斜大写字母 (Italic Uppercase)来代表图片, 如 $\textit{I}$。 同时, 在全章中, sign激活函数直接由 $\textit{sign}$ 来表示。\par
 \textbf{问题定义:} 假设我们有一个训练数据集$T = \{I_i\}_{i=1}^{NT}$, 包含$NT$张训练数据图片, 以及其对应的监督标签集合 $Y = \{y_i\}_{i=1}^{NT}$。对于在所有的训练数据中的图片对, 我们可以创建一个相似度矩阵$\mathbf{S}$, 其中$s_{ij} = 1$ 如果图片$\it{I}_i$和图片$\it{I}_{ij}$是来自一个类别, 否则的话$s_{ij} = 0$。进行图片检索的深度哈希的目标是学习到一个非线性的哈希函数$\mathcal{H}: \mathbf{I} \mapsto \{0,1\}^B $, 将输入的图片$\it{I}_i$映射到一个二进制的$B$位的哈希向量$\mathbf{h}_i$。其中$\mathbf{h}_i$需要保存在$\mathbf{S}$中的图片之间的相似度信息。也就是说, 如果$s_{ij} = 1$时, $\mathbf{h}_i$和$\mathbf{h}_j$之间的汉明距离应该尽量小。而, $s_{ij} = 0$时, $\mathbf{h}_i$和$\mathbf{h}_j$之间的汉明距离则应该尽量大。
 
 \subsection{孪生Vision Transformer架构}
@@ -62,7 +62,7 @@ Vision Transformer在此时仍然处于研究的初期, 并且由于其优越的
     z_0 = X_p + E_{pos} = [x_{class}; x_p^1 , ... , x_p^N ] + E_{pos}.
 \end{equation} \par
 \textbf{基于自注意力的编码器} \quad
-Transformer编码器包含$L-1$层, 每一层包含了一个多头的自注意力模块(multi-headed self-attention, MHA)和一个多层感知器(multi-layer perceptron, MLP)。在每一层前加入一个层次标准化。同时采取残差连接进行每一层的相连, 如图~\ref{fig:mainarch}所示。Transformer的每一层计算如下述公式所示:
+Transformer编码器包含$L-1$层, 每一层包含了一个多头的自注意力模块(Multi-headed Self-attention, MHA)和一个多层感知器(Multi-layer Perceptron, MLP)。在每一层前加入一个层次标准化。同时采取残差连接进行每一层的相连, 如图~\ref{fig:mainarch}所示。Transformer的每一层计算如下述公式所示:
 \begin{equation}
     \begin{split}
         z_{l} &= \mathcal{F}_{msa}(\mathcal{F}_{ln}(z_{l-1})) + z_{l-1}   \\
@@ -72,7 +72,7 @@ Transformer编码器包含$L-1$层, 每一层包含了一个多头的自注意�
   \end{equation} \par
 \textbf{双流特征学习}\quad 类似于TransReID~\cite{he2021transreid}, 在上述的编码器后, 我们可以得到$Z_{L-1} = [z_{L-1}^0;z_{L-1}^1,z_{L-1}^2, ... ,z_{L-1}^N]$。值得注意的是, $z_{L-1}^0$是对于添加的用于分类的可学习的嵌入表征$x_{class}$的隐向量。受TransReID~\cite{he2021transreid}所启发, 我们设计了两个并行的分支, 用于学习全局特征信息的分支$\mathcal{F}^g_{block}$和用于学习局部特征信息的分支 $\mathcal{F}^l_{block}$。对于全局信息的分支, 它和传统的Transformer层类似,将 $Z_{L-1}$编码成$Z_{L} = [\mathbf{f}_g;z_L^1,z_L^2, ... ,z_L^  N]$, 其中$\mathbf{f}_g$被视作全局特征的代表向量。对于学习局部特征信息的分支, 我们将 $Z_{L-1}$ 分成$K$个组, 并且将一个共享的token $z_{L-1}^0$ 添加在每个组的前部。 通过这样的方法, 我们得到了$K$个输入序列, 如$ \{[z_{L-1}^0;z_{L-1}^1,...,z_{L-1}^{N/K}],$ $ [z_{L-1}^0;z_{L-1}^{N/K+1},...,z_{L-1}^{2\times N/K}], [z_{L-1}^0;z_{L-1}^{N-N/K+1}$ $,...,z_{L-1}^N]\}$所示。随后, 我们将$K$个特征组输入到 $\mathcal{F}^l_{block}$ 来学习$K$个局部的特征向量$\{\mathbf{f}_l^1,\mathbf{f}_l^2,...,\mathbf{f}_l^K\}$。\par
 \textbf{哈希神经网络层}
-为了学习到紧凑的哈希编码, 我们额外设计了几个哈希层来讲特征向量映射成不同长度的哈希向量。具体来说, 假设在检索阶段每一张图片的哈希码长度为$B$, 则对于长度为$M$的全局特征向量, 我们经过映射后得到一个长度为$B/2$的全局哈希向量, 具体的计算如下所示:
+为了学习到紧凑的哈希编码, 我们额外设计了几个哈希层来将特征向量映射成不同长度的哈希向量。具体来说, 假设在检索阶段每一张图片的哈希码长度为$B$, 则对于长度为$M$的全局特征向量, 我们经过映射后得到一个长度为$B/2$的全局哈希向量, 具体的计算如下所示:
 \begin{equation}
     h_g = \mathcal{F}_h^g(f_g) = \mathbf{f}_g W^T + b.
 \end{equation}
@@ -94,7 +94,7 @@ Transformer编码器包含$L-1$层, 每一层包含了一个多头的自注意�
 |\mathbf{S}| /\left|\mathbf{S}_{0}\right|, & s_{i j}=0
 \end{array}\right.
 \end{equation}
-其中$\mathbf{S}_{1}=\left\{s_{i j} \in \mathbf{S}: s_{i j}=1\right\}$ 是属于同一个类别的图片对的集合。而$\mathbf{S}_{0}=\left\{s_{i j} \in \mathbf{S}: s_{i j}=0\right\}$ 则是不属于同一个类别的图片对的集合。对于每一对哈希向量对 $(\mathbf{h}_i,\mathbf{h}_j)$, $P\left(s_{i j} \mid \boldsymbol{h}_{i}, \boldsymbol{h}_{j}\right)$ 则是一个给定一对哈希码$\mathbf{h}_i$和$\mathbf{h}_j$后对于$s_{ij}$的条件概率。因为$s_{ij}$的取值为二值, $0$和$1$, 我们自然可以将$P\left(s_{i j} \mid \boldsymbol{h}_{i}, \boldsymbol{h}_{j}\right)$定义为一个伯努利分布(benoulli distribution):
+其中$\mathbf{S}_{1}=\left\{s_{i j} \in \mathbf{S}: s_{i j}=1\right\}$ 是属于同一个类别的图片对的集合。而$\mathbf{S}_{0}=\left\{s_{i j} \in \mathbf{S}: s_{i j}=0\right\}$ 则是不属于同一个类别的图片对的集合。对于每一对哈希向量对 $(\mathbf{h}_i,\mathbf{h}_j)$, $P\left(s_{i j} \mid \boldsymbol{h}_{i}, \boldsymbol{h}_{j}\right)$ 则是一个给定一对哈希码$\mathbf{h}_i$和$\mathbf{h}_j$后对于$s_{ij}$的条件概率。因为$s_{ij}$的取值为二值, $0$和$1$, 我们自然可以将$P\left(s_{i j} \mid \boldsymbol{h}_{i}, \boldsymbol{h}_{j}\right)$定义为一个伯努利分布(Benoulli Distribution):
 \begin{equation}
     \begin{aligned}
 P\left(s_{i j} \mid \boldsymbol{h}_{i}, \boldsymbol{h}_{j}\right) &=\left\{\begin{array}{ll}
@@ -265,7 +265,7 @@ $(I_i,I_j)$, 我们可以通过将图片对输入进孪生Vision Transformer得�
   \end{enumerate}
 
   \subsection{实验评价指标}
-  我们采取平均准确率均值 (Mean Average precision, mAP) 以及 \textbf{Precision}-\textbf{Recall}   曲线来评估方法的性能。\textbf{CMC}计算查询图片出现在检索返回列表不同位置的概率。由于它仅仅考虑第一次的匹配, 使得其不适用于数据库中包含不止一张与查询图片属于同一辆车的图片的场景。因此我们加入\textbf{mAP}作为评估指标。~\textbf{mAP}同时考虑返回的查询结果的\textit{precison}和\textit{recall}其中 \textbf{mAP}的计算如下
+  我们采取平均准确率均值 (Mean Average precision, \textbf{mAP}) 以及 \textbf{Precision}-\textbf{Recall}   曲线来评估方法的性能。\textbf{CMC}计算查询图片出现在检索返回列表不同位置的概率。由于它仅仅考虑第一次的匹配, 使得其不适用于数据库中包含不止一张与查询图片属于同一辆车的图片的场景。因此我们加入\textbf{mAP}作为评估指标。~\textbf{mAP}同时考虑返回的查询结果的\textit{precison}和\textit{recall}其中 \textbf{mAP}的计算如下
   \begin{equation}
      \textbf{mAP} = \frac{1}{n} \sum_{k=1}^{k= N} \textbf{AP}_k
   \end{equation}
@@ -279,61 +279,8 @@ $(I_i,I_j)$, 我们可以通过将图片对输入进孪生Vision Transformer得�
 
 
 
-\begin{figure}[!htp]
-    \centering
-    \begin{subfigure}{\textwidth}
-      \centering
-      \includegraphics[height=8cm]{04/16prcifar.pdf}
-      \caption{16位哈希码下在\textbf{CIFAR-10}上各种方法的\textbf{PR}曲线}
-    \end{subfigure}
-    \hspace{1cm}
-    \begin{subfigure}{\textwidth}
-      \centering
-      \includegraphics[height=8cm]{04/precifar.pdf}
-      \caption{16位哈希码下在\textbf{CIFAR-10}上各种方法的\textbf{Precision}}
-    \end{subfigure}
-    \bicaption[各种哈希算法在\textbf{CIFAR-10}上的结果]{
-        \textbf{TransHash}和其他算法在\textbf{CIFAR-10}数据集上的结果}{The experimental results on \textbf{CIFAR-10}  of \textbf{TransHash} and other competing methods}
-    \label{fig:rescifar}
-  \end{figure}
-
-  \begin{figure}[!htp]
-    \centering
-    \begin{subfigure}{\textwidth}
-      \centering
-      \includegraphics[height=8cm]{04/16prnuswide.pdf}
-      \caption{16位哈希码下在\textbf{NUSWIDE}上各种方法的\textbf{PR}曲线}
-    \end{subfigure}
-    \hspace{1cm}
-    \begin{subfigure}{\textwidth}
-      \centering
-      \includegraphics[height=8cm]{04/prenuswide.pdf}
-      \caption{16位哈希码下在\textbf{NUSWIDE}上各种方法的\textbf{Precision}}
-    \end{subfigure}
-    \bicaption[各种哈希算法在\textbf{NUSWIDE}上的结果]{
-        \textbf{TransHash}和其他算法在\textbf{NUSWIDE}数据集上的结果}{The experimental results on \textbf{NUSWIDE}  of \textbf{TransHash} and other competing methods}
-    \label{fig:nuswide}
-  \end{figure}
-
-  \begin{figure}[!htp]
-    \centering
-    \begin{subfigure}{\textwidth}
-      \centering
-      \includegraphics[height=8cm]{04/16primagenet.pdf}
-      \caption{16位哈希码下在\textbf{NUSWIDE}上各种方法的\textbf{PR}曲线}
-    \end{subfigure}
-    \hspace{1cm}
-    \begin{subfigure}{\textwidth}
-      \centering
-      \includegraphics[height=8cm]{04/preimagenet.pdf}
-      \caption{16位哈希码下在\textbf{IMAGENET}上各种方法的\textbf{Precision}}
-    \end{subfigure}
-    \bicaption[各种哈希算法在\textbf{IMAGENET}上的结果]{
-        \textbf{TransHash}和其他算法在\textbf{IMAGENET}数据集上的结果}{The experimental results on \textbf{IMAGENET}  of \textbf{TransHash} and other competing methods}
-    \label{fig:imagenet}
-  \end{figure}
 \subsection{与先进方法的对比结果}
-在这小节, 我们将本章提出的基于Vision Transformer的架构~\textbf{TransHash}和其他先进的深度哈希算法进行比较。具体来说, 本章进行比较的算法可以被分成两个类别: ``浅哈希方法'' 和``深度哈希方法''。对于``浅哈希方法'', 我们包括了最常见的几个算法\textbf{SH}~\cite{weiss2008spectral},~\textbf{ITQ}~\cite{gong2012iterative},~\textbf{KSH}~\cite{liu2012supervised},~和~\textbf{BRE}~\cite{kulis2009learning}进行细致的比较。对于基于深度学习的哈希方法, 我们包含了第一批基于深度卷积神经网络来解决哈希问题的关注~\textbf{DSH}\cite{liu2016deep12}。同时, 我们还包括了一些最近出现的深度哈希的工作, 例如, ~\textbf{DHN}~\cite{zhu2016deep},~\textbf{HashNet}~\cite{cao2017hashnet},~\textbf{IDHN}~\cite{zhang2019improved} and~\textbf{DPN}~\cite{fan20deep}。 \par
+在这小节, 我们将本章提出的基于Vision Transformer的架构~\textbf{TransHash}和其他先进的深度哈希算法进行比较。具体来说, 本章进行比较的算法可以被分成两个类别: ``浅哈希方法'' 和``深度哈希方法''。对于``浅哈希方法'', 我们包括了最常见的几个算法\textbf{SH}~\cite{weiss2008spectral},~\textbf{ITQ}~\cite{gong2012iterative},~\textbf{KSH}~\cite{liu2012supervised},~和~\textbf{BRE}~\cite{kulis2009learning}进行细致的比较。对于基于深度学习的哈希方法, 我们包含了第一批基于深度卷积神经网络来解决哈希问题的算法~\textbf{DSH}\cite{liu2016deep}。同时, 我们还包括了一些最近出现的深度哈希的工作, 例如, ~\textbf{DHN}~\cite{zhu2016deep},~\textbf{HashNet}~\cite{cao2017hashnet},~\textbf{IDHN}~\cite{zhang2019improved} and~\textbf{DPN}~\cite{fan20deep}。 \par
 值得注意的是, 对于所有非深度学习的方法和\textbf{DPN}, 我们直接引用Cao~\cite{cao2017hashnet} 和 \cite{fan20deep}的实验结果。对于其他的深度哈希的算法, 我们采用开源的实现代码进行训练并且测试。为了公正的比较, 我们对于算法的超参数和预处理的方法都遵循原先论文中的实验准则。 \par
 全类平均精准度(\textbf{mAP})的结果如表~\ref{table:cifar}, 表~\ref{table:nuswide}和表~\ref{table:imagenet}所示。很明显可以看到本章提出的基于Vision Transformer的算法框架在三个数据集上和其他比较的算法而言都能取得非常优异的性能表现。我们的算法在\textbf{NUSWIDE}和\textbf{IMAGENET}上相比较最优的浅层哈希的方法的方法分别取得$19.93\%$,$~39.69\%$的平均\textbf{mAP}提升。在\textbf{NUSWIDE}数据集上, \textbf{ITQ}在 16位, 32位, 48位和64位的哈希长度时取得了 $0.5086$, $0.5425$, $0.5580$, $0.5611$ 的\textbf{mAP} 远低于基于深度哈希的方法。在\textbf{IMAGENET}数据集上, 和深度学习的哈希方法的性能差距更加的显著。基于手工特征的哈希方法的性能不佳的原因主要是因为基于手工描述符的特征难以刻画保留原图片中的具有判别力的特征, 从而导致次优的哈希码。 很明显, 基于深度学习的哈希方法可以取得大幅度的性能提升。\textbf{DPN}算法在\textbf{CIFAR-10}上取得除了本章算法外的最优性能, $0.8305$~\textbf{mAP}。在\textbf{NUSWIDE}上的第二性能由~\textbf{IDHN}取得, $0.7157$ \textbf{mAP}。 在\textbf{IMAGENET}, \textbf{DPN}取得除了\textbf{TransHash}的最优性能, 在4种不同的哈希长度上取得$0.734 $ \textbf{mAP}。\par
 很明显, \textbf{TransHash} 依然以大幅度性能提升领先其余基于深度卷积神经网络的算法。\textbf{TransHash}在\textbf{CIFAR-10},~\textbf{NUSWIDE},~\textbf{IMAGENET}上分别取得了$0.9123 $, $0.7419$和 $0.8610$的平均~\textbf{mAP}。具体来说, 在\textbf{CIFAR-10}上, 64位哈希长度时, \textbf{TransHash}取得了$0.9166$的\textbf{mAP}, 比最先进的基于卷积神经网络的方法\textbf{DPN}超出了$8.8 \%$。\textbf{TransHash}在\textbf{IMAGENET}上的性能增长更加显著, 平均\textbf{mAP}超越第二的算法\textbf{DPN}$12.7\%$。 \textbf{TransHash}的性能的增长主要可以归功于两个方面。第一方面是\textbf{TransHash}采取的孪生架构以及双流的特征学习机制可以帮助学习到更加细粒度的特征。
@@ -381,23 +328,104 @@ $(I_i,I_j)$, 我们可以通过将图片对输入进孪生Vision Transformer得�
 
 
 第二个原因是在\textbf{ImageNet}上相似的图片对和不相似图片对的比例比~\textbf{CIFAR-10}更加严重, 造成了数据不平衡问题, 大大降低了检索的模型性能~\cite{zhang2019improved,liu2016deep12}。\textbf{TransHash}通过动态的对每一个图片对分配一个权重来解决这个问题~ \cite{cao2017hashnet}。在\textbf{NUSWIDE}数据集上, 本章提出的算法也可以在四种哈希长度上均超越所有比较的算法。算法取得的性能提升相比较在其他两个数据集上没有显著的原因主要是因为~\textbf{TransHash}并不是针对多标签检索的场景。\par
-我们额外画了基于深度学习的比较模型和\textbf{TransHash}在$16$位哈希码下的\textbf{Precision-Recall}曲线以及在不同的检索返回的图片数量下的\textbf{Precision}曲线。如图~\ref{fig:rescifar}, 图~\ref{fig:nuswide}和图~\ref{fig:imagenet}所示, 对于\textbf{PR}曲线, 代表\textbf{TransHash}的红色曲线始终以大幅度领先其他比较的算法。而对于\textbf{Precision}曲线, \textbf{TransHash}也显著高于所有其他的曲线。在\textbf{NUSWIDE}上, \textbf{TransHash}在\textbf{PR} 曲线上只以微小的优势超过其余方法。对于\textbf{Precision}曲线, \textbf{TransHash}对于检索的返回图片数为$100$时, 得到的精度为$76.77 \%$, 超过\textbf{IDHN}$2.7 \%$。 在\textbf{IMAGENET}, 同样可以观察到非常显著的性能提升。对于$16$位哈希码的\textbf{Precision-Recall}曲线, \textbf{DCH}取得了第二的性能而在$48$时, \textbf{HashNet}则超越了\textbf{DCH}取得了第二的性能。同时很容易观察到\textbf{TransHash}在两种评估指标上都以大幅度领先其余比较的方法。在\textbf{Precision}上, 在检索返回图片数量为$100$和$1000$时候, 我们分别取得$90.35\%$和$ 89.38\%$的精度, 超越\textbf{HashNet} $24.73\%$ 和 $28.18 \%$。这些卓越的性能结果可以充分的证实本章提出的纯粹基于Transformer的深度哈希架构的有效性。
-\begin{figure}[!htp]
-    \centering
-    \includegraphics[width=15.5cm]{04/64abcifar10} \\
-    \bicaption[在\textbf{CIFAR-10}上的消融实验的结果]
-      {不同的变种在$64$位哈希码时的\textbf{CIFAR-10}性能。}
-      {The performance of different variants on \textbf{CIFAR-10} of $64$ bits.}
-   \label{fig:ablationcifar}
-\end{figure}
+
 
 \begin{figure}[!htp]
+  \centering
+  \begin{subfigure}{0.45\textwidth}
     \centering
-    \includegraphics[width=15.5cm]{04/64abnuswide} \\
-    \bicaption[在\textbf{NUSWIDE}上的消融实验的结果]
-      {不同的变种在$64$位哈希码时的\textbf{NUSWIDE}性能。}
-      {The performance of different variants on \textbf{NUSWIDE} of $64$ bits.}
-   \label{fig:ablationnuswide}
+    \includegraphics[height=5cm]{04/cifar_16b_pr.pdf}
+    \caption{16位哈希码下在\textbf{CIFAR}上各种方法的\textbf{PR}曲线}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/cifar_64b_pr.pdf}
+    \caption{64位哈希码下在\textbf{CIFAR}上各种方法的\textbf{PR}曲线}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/cifar_48b_topk.pdf}
+    \caption{48位哈希码下在\textbf{CIFAR}上各种方法的\textbf{Precision}}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/nuswide_16b_pr.pdf}
+    \caption{16位哈希码下在\textbf{NUSWIDE}上各种方法的\textbf{PR}曲线}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/nuswide_64b_pr.pdf}
+    \caption{64位哈希码下在\textbf{NUSWIDE}上各种方法的\textbf{PR}曲线}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/nuswide_48b_topk.pdf}
+    \caption{48位哈希码下在\textbf{NUSWIDE}上各种方法的\textbf{Precision}}
+  \end{subfigure}
+\end{figure}
+\begin{figure}[!htp]\ContinuedFloat
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/imagenet_16b_pr.pdf}
+    \caption{16位哈希码下在\textbf{IMAGENET}上各种方法的\textbf{PR}曲线}
+  \end{subfigure}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/imagenet_48b_topk.pdf}
+    \caption{48位哈希码下在\textbf{IMAGENET}上各种方法的\textbf{Precision}}
+  \end{subfigure}
+  \bicaption[各种先进哈希算法在三个数据集上的检索结果]{ \textbf{TransHash}和其他算法在不同数据集上的检索结果}{The experimental results on three public benchmark datasets of \textbf{TransHash} and other competing methods.}
+  \label{fig:transhashresults}
+\end{figure}
+
+
+我们额外画了基于深度学习的比较模型和\textbf{TransHash}在$16$位哈希码下的\textbf{Precision-Recall}曲线以及在不同的检索返回的图片数量下的\textbf{Precision}曲线。如图~\ref{fig:transhashresults}所示, 对于\textbf{PR}曲线, 代表\textbf{TransHash}的红色曲线始终以大幅度领先其他比较的算法。而对于\textbf{Precision}曲线, \textbf{TransHash}也显著高于所有其他的曲线。在\textbf{NUSWIDE}上, \textbf{TransHash}在\textbf{PR} 曲线上只以微小的优势超过其余方法。对于\textbf{Precision}曲线, \textbf{TransHash}对于检索的返回图片数为$100$时, 得到的精度为$76.77 \%$, 超过\textbf{IDHN}$2.7 \%$。 在\textbf{IMAGENET}, 同样可以观察到非常显著的性能提升。对于$16$位哈希码的\textbf{Precision-Recall}曲线, \textbf{DCH}取得了第二的性能而在$48$时, \textbf{HashNet}则超越了\textbf{DCH}取得了第二的性能。同时很容易观察到\textbf{TransHash}在两种评估指标上都以大幅度领先其余比较的方法。在\textbf{Precision}上, 在检索返回图片数量为$100$和$1000$时候, 我们分别取得$90.35\%$和$ 89.38\%$的精度, 超越\textbf{HashNet} $24.73\%$ 和 $28.18 \%$。这些卓越的性能结果可以充分的证实本章提出的纯粹基于Transformer的深度哈希架构的有效性。
+
+
+\begin{figure}[!htp]
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/cifar_16b_ab_pr.pdf}
+    \caption{16位哈希码下在\textbf{IMAGENET}上各种方法的\textbf{PR}曲线}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/cifar_64b_ab_pr.pdf}
+    \caption{48位哈希码下在\textbf{IMAGENET}上各种方法的\textbf{Precision}}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/nuswide_16b_ab_pr.pdf}
+    \caption{16位哈希码下在\textbf{IMAGENET}上各种方法的\textbf{PR}曲线}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/nuswide_64b_ab_pr.pdf}
+    \caption{48位哈希码下在\textbf{IMAGENET}上各种方法的\textbf{Precision}}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/imagenet_16b_ab_pr.pdf}
+    \caption{16位哈希码下在\textbf{IMAGENET}上各种方法的\textbf{PR}曲线}
+  \end{subfigure}
+  \hspace{1cm}
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[height=5cm]{04/imagenet_64b_ab_pr.pdf}
+    \caption{48位哈希码下在\textbf{IMAGENET}上各种方法的\textbf{Precision}}
+  \end{subfigure}
+  \bicaption[在三个数据集上的消融实验的结果]{ \textbf{TransHash}和其他变种在三个数据集上的结果}{The experimental results on three public benchmark datasets of \textbf{TransHash} and three variants.}
+  \label{fig:ablationresults}
 \end{figure}
 
 
@@ -408,19 +436,11 @@ $(I_i,I_j)$, 我们可以通过将图片对输入进孪生Vision Transformer得�
     \item \textbf{TransHash w/o Q:} 是没有柯西分布的量化损失函数的变种。
     \item \textbf{TransHash w/o C:} 是继续采取\textit{sigmoid}函数作为生成概率的函数$\sigma(.)$的变种。
 \end{enumerate}
-如表~\ref{table:ablation} 和 图~\ref{fig:ablationcifar}, 图~\ref{fig:ablationnuswide}以及图~\ref{fig:ablationimagenet}所示, 当没有柯西量化损失函数时, 如\textbf{TransHash w/o Q}所示, 框架经受了明显的性能下降。在\textbf{NUSWIDE}和\textbf{IMAGENET}下, $64$位哈希码的情况下\textbf{mAP}分别从 74.88\% 下降到 69.15\% 以及89.21\% 下降到 87.58 \%。当模型没有采取柯西分布作为概率生成函数时, 如\textbf{TransHash w/o C}所示, 我们可以观察点显著的性能下降。具体来说, 在\textbf{IMAGENET}上, 模型经历了平均$5.55 \%$的\textbf{mAP}下降。我们也注意到在哈希码较短的情况下, 模型的性能损失更加显著。主要的原因是根据Cao~\cite{cao2018deep}, 柯西分布可以有效的拉近相似对的哈希距离至一个较小的范围内, 这使得其在哈希码短的情况下更加的明显。\par
-
-\begin{figure}[!htp]
-    \centering
-    \includegraphics[width=15.5cm]{04/64abimagenet} \\
-    \bicaption[在\textbf{IMAGENET}上的消融实验的结果]
-      {不同的变种在$64$位哈希码时的\textbf{IMAGENET}性能。}
-      {The performance of different variants on \textbf{IMAGENET} of $64$ bits.}
-   \label{fig:ablationimagenet}
-\end{figure}
+如表~\ref{table:ablation} 和 图~\ref{fig:ablationresults}所示, 当没有柯西量化损失函数时, 如\textbf{TransHash w/o Q}所示, 框架经受了明显的性能下降。在\textbf{NUSWIDE}和\textbf{IMAGENET}下, $64$位哈希码的情况下\textbf{mAP}分别从 74.88\% 下降到 69.15\% 以及89.21\% 下降到 87.58 \%。当模型没有采取柯西分布作为概率生成函数时, 如\textbf{TransHash w/o C}所示, 我们可以观察点显著的性能下降。具体来说, 在\textbf{IMAGENET}上, 模型经历了平均$5.55 \%$的\textbf{mAP}下降。我们也注意到在哈希码较短的情况下, 模型的性能损失更加显著。主要的原因是根据Cao~\cite{cao2018deep}, 柯西分布可以有效的拉近相似对的哈希距离至一个较小的范围内, 这使得其在哈希码短的情况下更加的明显。\par
 
 
-最重要的是, 为了测试本章提出的双流特征学习的有效性, 我们也测试了本章提出的孪生模型仅仅包含全局特征学习时时候的性能。如图~\ref{}所示,  \textbf{TransHash w/o P} 的性能持续性的低于具有我们提出的双流特征学习机制的完全模型。在\textbf{NUSWIDE} 和 \textbf{IMAGENET}上, 平均的\textbf{mAP}下降分别是  2.08\% 和 2.83\%。这些实验充足的证明了我们提出的纯基于Transformer的框架的各个组成部分的有效性。\par
+
+最重要的是, 为了测试本章提出的双流特征学习的有效性, 我们也测试了本章提出的孪生模型仅仅包含全局特征学习时时候的性能。如图~\ref{fig:ablationresults}所示,  \textbf{TransHash w/o P} 的性能持续性的低于具有我们提出的双流特征学习机制的完全模型。在\textbf{NUSWIDE} 和 \textbf{IMAGENET}上, 平均的\textbf{mAP}下降分别是  2.08\% 和 2.83\%。这些实验充足的证明了我们提出的纯基于Transformer的框架的各个组成部分的有效性。\par
 由于控制本框架的局部特征的数量的超参数$K$对于模型来说也非常的重要, 我们额外在\textbf{CIFAR-10}进行了详细的实验来对$K$值的敏感性进行探讨。值得注意的是, 如果最终的哈希码的长度是$16$, 并且$K$为2时, 则全局的特征负责生成第一个$8$位的哈希码, 而其余的局部特征每一个负责生成$4$位的哈希码。 \par
 如表~\ref{table:ablationk}所示, 通常而言, 模型的性能对$K$的取值并不敏感。同时, 我们也注意到, 当每一个局部特征向量对应生成的哈希码长度少于$4$时候, 模型通常不能收敛。鉴于以上的观察, 我们根据经验将$K$的值设置为$2$。
 

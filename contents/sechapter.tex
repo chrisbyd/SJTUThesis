@@ -1,5 +1,5 @@
 % !TEX root = ../main.tex
-\chapter{基于成对监督的跨模态行人重识别}
+\chapter{基于成对监督的细粒度跨模态图像检索}
 行人重识别 (Person Re-identification, Person ReID) 旨在给定一个检索的行人图片, 在一个包含多个不同监控摄像头拍摄的不同的行人的图片数据库中检索出对应的行人图片。在所有的与 ReID 相关的研究中, 跨模态行人重识别 (Visible-to-thermal Person Re-identification, VT-REID) 在现阶段获得了研究人员的广泛关注。由于模态鸿沟 (Modality Gap), 跨模态变化 (Cross Modality Variation) 以及模态内变化 (Intra Modality Variation) 的存在, 跨模态行人重识别与传统行人重识别相比而言更加有挑战性。当前的算法一般通过两个分开的卷积神经网络 (Convolutional Neural Network, CNN) 将两个不同模态的图片映射到同一个特征空间, 然后通过各种铰链损失函数来进行度量学习。然而, 这种基于简单的CNN的网络很难捕捉到有判别性的模态恒定 （Modality Invariant）的特征, 从而导致了后续识别时的性能损失。本章提出了一个新型的学习模态恒定以及外表恒定 (Appearance Invariant)特征的框架网络, 以及一系列基于最大似然估计的损失函数来进行跨模态识别任务。本章提出的算法在跨模态识别的标准数据集 \textbf{RegDB} 和 \textbf{SYSU-MM01}上取得了先进的性能, 证明了算法的有效性以及先进性。
 \section{引言}
 智能安防是新时代智慧城市建设中不可缺少的一环。通过城市中各处不同型号不同分辨率的视频监控设备24小时的监控摄影, 现代城市生活的安全系数得到了极大的提高。其中的一个支撑智能安防的关键研究方向就是行人重识别。 行人重识别是通过在一个包含不同监控摄像头在不同视角拍摄的大量行人图片的数据库中精确的查找检索出给定的一个特定行人的照片~\cite{wang2016scale,zheng2017sift}。大部分现有的算法主要关注单模态可见光图像的检索 (Visible Images), 即检索的图片和数据库中的图像都是 RGB 图~\cite{ahmed2015improved,koestinger2012large, li2014deepreid, li2015multi, li2013learning, liao2015person, wu2016enhanced, xiao2016learning, zhu2017part, chen2017multi, ge2018fd, li2018harmonious,chen2021harmonious, tang2022harmonious, xu2018attention, yao2019deep, zheng2019joint}。\par
@@ -143,7 +143,7 @@ Vector 来得到图片的一个全局的特征向量。 Cheng 等人~\cite{cheng
 
 
 \begin{algorithm}
-  \caption{MAENet框架的优化算法}\label{algo:main}
+  \caption{\textbf{MAENet}框架的优化算法}\label{algo:main}
   \KwData{训练图片集 $\mathbf{X}$,~相似性标签 $\mathcal{S}$, ~学习率 $\alpha$ and 损失函数系数 $\lambda_1$, $\lambda_2$, $\lambda_3$~ 最大迭代轮数$T$}
   \KwResult{优化的网络结构参数 $\theta_V$,~$\theta_T$, $\theta_{RV}$,~$\theta_{RT}$;}
   $t \leftarrow 0$\;
@@ -188,11 +188,11 @@ Vector 来得到图片的一个全局的特征向量。 Cheng 等人~\cite{cheng
 
 \begin{table}[!htpb]
   %% \centering % not needed
-  \bicaption{各个先进的算法在Visible到Thermal的跨模态重识别在RegDB数据集上的测试结果}{Vsible-to-Thermal Test Results of State of The Art Methods on RegDB}
+  \bicaption{各个先进的算法在Visible到Thermal的跨模态重识别在\textbf{RegDB}数据集上的测试结果}{Vsible-to-Thermal Test Results of State of The Art Methods on RegDB}
   \centering
   \begin{tabular}{cccccc}
-     \\ \hline
-  \multicolumn{2}{l|}{Methods} & r=1 &r=10 & r=20 & mAP   \\\hline
+     \\ \hline 
+  \multicolumn{2}{l|}{Methods} & r=1  &r=10 & r=20 & mAP   \\\hline
   
   \multicolumn{2}{l|}{HOG} & 13.49 & 33.22 & 43.66 & 10.31  \\
   \multicolumn{2}{l|}{MLBP} &  2.02& 7.33 & 10.90 & 6.77  \\
@@ -229,7 +229,7 @@ Vector 来得到图片的一个全局的特征向量。 Cheng 等人~\cite{cheng
 
 \begin{table}[!htpb]
   %% \centering % not needed
-  \bicaption{各个先进的算法在Visible到Thermal的跨模态重识别在SYSU-MM01数据集上的测试结果}{Vsible-to-Thermal Test Results of State of The Art Methods on SYSU-MM01}
+  \bicaption{各个先进的算法在Visible到Thermal的跨模态重识别在\textbf{SYSU-MM01}数据集上的测试结果}{Vsible-to-Thermal Test Results of State of The Art Methods on SYSU-MM01}
   \centering
   \begin{tabular}{cccccc}
      \\ \hline
@@ -267,7 +267,7 @@ Vector 来得到图片的一个全局的特征向量。 Cheng 等人~\cite{cheng
 
 \begin{table}[!htpb]
   %% \centering % not needed
-  \bicaption{各个先进的算法在Visible到Thermal的跨模态重识别在SYSU-MM01 (Indoor)数据集上的测试结果}{Vsible-to-Thermal Test Results of State of The Art Methods on SYSU-MM01 (Indoor)}
+  \bicaption{各个先进的算法在Visible到Thermal的跨模态重识别在\textbf{SYSU-MM01} (Indoor)数据集上的测试结果}{Vsible-to-Thermal Test Results of State of The Art Methods on SYSU-MM01 (Indoor)}
   \centering
   \begin{tabular}{cccccc}
      \\ \hline

@@ -1,5 +1,5 @@
 % !TEX root = ../main.tex
-\chapter{基于Transformer的深度量化方法}
+\chapter{基于视觉Transformer的乘积量化图像检索算法}
 在本章中, 我们提出第一个完全基于Vision Transformer的深度乘积量化网络来进行大规模的图像检索-平均精度量化Transformer (Average Precision Quantization Transformer, APQFormer)。\textbf{APQFormer}基于一个双支的Vision Transformer设计了一个深度量化神经网络, 其可以通过同时通过使用不同的图片patch策略学到更具有判别性的特征信息, 又通过一个可以嵌入至深度学习训练中的可导的乘积量化层来进行端到端的量化编码。对于端到端的乘积量化学习, 现在的算法大多数使用基于排序的量化损失函数, 而这样的方法并不能保证优化最终的评价指标-平均精度均值(Mean Average Precision, mAP)。我们提出了一个新型的量化损失函数-平均精度量化损失(Average Precision Quantization Loss, APQ loss)。其通过对查询的数据使用原向量而被检索的图片使用量化后的特征向量来将量化编码检索时的非对称检索特性嵌入至度量学习设计中。同时, 其通过直接优化训练过程中每个批次数据计算得到的平均精度(Average Precision, AP)来同时学习保留了相似度的特征向量以及紧凑的乘积量化编码。本章在两个标准的大规模检索数据集-\textbf{CIFAR-10}和\textbf{IMAGENET}-上进行了广泛的实验。实验结果正式了\textbf{APQ}与先进算法相比具有更加优越的性能, 从而证实了算法设计的有效性。
 \section{引言}
 现代社会中每日的多媒体数据量以爆炸性的速度增长, 这导致了针对大规模检索的近似最近邻搜索技术的迅速发展于成熟~\cite{andoni2006near,shrivastava2014densifying, malkov2018efficient, nie2020deep, li2021dahp}。在近似最近邻技术中, 深度哈希算法由于其检索的速度以及较低的存储开销成为了主流被采用的方法~\cite{zhu2016deep, jiang2018asymmetric, zhang2019improved, cao2017hashnet}。具体来说, 在基于深度学习的大规模图像检索中, 每一张图片是由一个紧凑的哈希码来表示, 并且通过哈希码进行图片间的迅速的距离计算~\cite{jang2020generalized}。\par

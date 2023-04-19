@@ -13,7 +13,7 @@
    \label{fig:arch1}
 \end{figure} 
 和传统行人重识别相比, VT-ReID 由于跨模态差异 (Cross-modality Discrepancy)的存在而尤其地具有挑战性, 如图~\ref{fig:arch1}。跨模态的差异一般是由于可见光和热度图成像使用的不同的光谱造成。同时, 如图~\ref{fig:arch1}所示, 由于捕捉行人图像的摄像机角度的差别, 以及行人外表着装等的改变带来的模态内的变化更加剧了跨模态检索的难度。\par
-现阶段的跨模态行人重识别方法一般包含两个通用的流程: (1) ``\textbf{特征提取}'' 和 (2)``\textbf{相似度学习}'' 。对于``\textbf{特征提取}'', 现有的算法框架基本基于卷积神经网络例如 AlexNet 或者 ResNet 等来提取特征, 这种简单 CNN 结构的特征提取方法很难保证能提取出充满信息量的特征, 从而对第二阶段的相似度学习带来负面的影响。例如, 来自同一个行人的图片由于着装不同, 光照差异, 姿态不同等差别导致CNN提取的特征截然不同, 导致产生迥异的特征嵌入向量。由于精确的行人检索需要CNN提取的同一行人的特征向量尽量接近, 这也启发了我们基于基础的卷积
+现阶段的跨模态行人重识别方法一般包含两个通用的流程: (1) ``\textbf{特征提取}'' 和 (2)``\textbf{相似度学习}'' 。对于``\textbf{特征提取}'', 现有的算法框架基本基于卷积神经网络例如 AlexNet 或者 ResNet 等来提取特征, 这种简单 CNN 结构的特征提取方法很难保证能提取出充满信息量的特征, 从而对第二阶段的相似度学习带来负面的影响。例如, 来自同一个行人的图片由于着装不同, 光照差异, 姿态不同等差别导致CNN提取的特征截然不同, 导致产生迥异的特征嵌入向量。由于精确的行人检索需要CNN提取的同一行人的特征向量尽量接近, 这也启发了我们基于基础的卷积神经网络设计一个框架来提取对于模态和外表恒定的特征的想法。
 \begin{figure}[!htp]
     \centering
     \includegraphics[width=15.0cm]{02/arch.pdf} \\
@@ -22,7 +22,7 @@
       {The framework of the proposed framework- MAENet in this chapter. As illustrated, the fhermal feature fxtractor is a convolutional neural network responsible for extracting feature vector from thermal images. in the same way, the visible feature extractor extracts features from the visible images. The thermal and visible reconstructors are responsible for reconstructing thermal and visible images. The reid losses are devised to perform cross-modal and intra-modal person re-identification.}   
       \label{fig:arch}
 \end{figure} 
-神经网络设计一个框架来提取对于模态和外表恒定的特征的想法。如图~\ref{fig:arch1}所示, 对于两个绿色框围住的两张来自同一行人的图片, 尽管他们的视觉图像特征截然不同, 但是两张图片中的行人展示出相似的轮廓特征, 这样的轮廓特征便可以帮助我们实现识别同一行人的任务。受这一发现的启发, 本章提出一个全新的框架图 \textbf{MAENet}, 用来完成跨模态的行人重识别任务。我们设计并且实现了一个新的模态和外表恒定编码的网络来提取由不同摄像头不同角度拍摄的同一行人照片的公共的特征。 如图~\ref{fig:arch} 所示, 框架类似于自编码器的架构, 由两个特征提取器 (Visible Feature Extractor 和 Thermal Feature Extractor) 以及两个图像重建器 (Thermal Reconstructor 和 Visible Reconstructor)组成。其中每个图像重建器会从同一行人的在同一模态的图像特征重建图片或者从另一模态的图片的特征重建当前模态的图片。例如, 对于来自同一行人$i$的图片$x_i$, $\hat{x}_i$, $y_i$ 其中 $x_i$ 和 $\hat{x}_i$是来在可见光模态的图片而$y_i$是来自于红外线模态的热度图片。我们的模型将从$x_i$提取的特征恢复成$y_i$图片, 并用L2损失来衡量恢复的优劣。同时也将从$x_i$的图片特征恢复成$\hat{x}_i$的图片, 从而促使模型学习到同一行人在不同的模态不同的外表下的共享的恒定的那一部分特征。
+如图~\ref{fig:arch1}所示, 对于两个绿色框围住的两张来自同一行人的图片, 尽管他们的视觉图像特征截然不同, 但是两张图片中的行人展示出相似的轮廓特征, 这样的轮廓特征便可以帮助我们实现识别同一行人的任务。受这一发现的启发, 本章提出一个全新的框架图 \textbf{MAENet}, 用来完成跨模态的行人重识别任务。我们设计并且实现了一个新的模态和外表恒定编码的网络来提取由不同摄像头不同角度拍摄的同一行人照片的公共的特征。 如图~\ref{fig:arch} 所示, 框架类似于自编码器的架构, 由两个特征提取器 (Visible Feature Extractor 和 Thermal Feature Extractor) 以及两个图像重建器 (Thermal Reconstructor 和 Visible Reconstructor)组成。其中每个图像重建器会从同一行人的在同一模态的图像特征重建图片或者从另一模态的图片的特征重建当前模态的图片。例如, 对于来自同一行人$i$的图片$x_i$, $\hat{x}_i$, $y_i$ 其中 $x_i$ 和 $\hat{x}_i$是来在可见光模态的图片而$y_i$是来自于红外线模态的热度图片。我们的模型将从$x_i$提取的特征恢复成$y_i$图片, 并用L2损失来衡量恢复的优劣。同时也将从$x_i$的图片特征恢复成$\hat{x}_i$的图片, 从而促使模型学习到同一行人在不同的模态不同的外表下的共享的恒定的那一部分特征。
 同时, 为了进行相似度学习, 我们设计了两种基于成对训练数据的损失函数来进行跨模态以及单模态的检索训练。本章的主要贡献可以概括为下面的三点:
 \begin{enumerate}
     \item 本章提出了一个新型的模态和外表恒定特征编码的框架来提取跨模态和不同外表下的共享的那部分特征用于行人重识别任务。
@@ -51,12 +51,11 @@ Vector 来得到图片的一个全局的特征向量。 Cheng 等人~\cite{cheng
       {The illustration of modality and apperance invariant embedding framework. Red color represents the visible modality and blue color stands for the thermal modality. $x_i$ and $\hat{x}_i$ are person images from the visible modality while $y_i$ and $\hat{y}_i$ are from the thermal modality. Two embedding loss are enforced to learn  apperance-invariant and modality-invariant feature embeddings.}   
       \label{fig:arch2}
 \end{figure} 
-
 中。 同时基于排序损失, 作者提出了一个 Dual-Constrained Top-Ranking 的损失函数来减轻跨模态变化以及模态内变化带来的影响。随后, 作者改进了基础的双流神经网络, 在两个卷积神经网络后层的全连接网络共享权重。同时, 作者提出了一个二阶段学习策略, 第一阶段进行特征学习, 第二阶段进行度量学习, 通过一个分层次的跨模态匹配模型优化模态特有的以及模态共享的特征。2019年, Hao等人~\cite{hao2019dual} 基于 PCB 模型设计双流 PCB 主干结构, 在特征分布的层面对齐每一个分块的特征。随后, 他又提出一个新型的算法 HSME~\cite{hao2019hsme} 通过将特征映射到超球面, 然后在超球面进行特征嵌入学习。Ye 随后提出~\cite{ye2019modality}基于双流神经网络的模态感知的协同学习方法, 同时可以在特征层面以及分类器层面解决模态差异带来的影响。特征层面是通过双流神经网络来映射到相同的空间减轻模态差异的影响。在分类器层面则是通过两个模态特有的分类起来捕获模态特定的信息。然而, 前面提到的大多数的算法主要集中关注在后一阶段的度量学习来减轻模态差异以及模态内变化带来的影响, 忽略了在网络结构层面直接解耦提取出最适用于跨模态检索的有辨别性特征的重要性。
 
 \section{MAENet}
 \subsection{本章主要符号定义以及问题定义}
-在整章中, 我们使用书法大写字母 (calligraphic uppercase), 例如 $\mathcal{X}$ 来表示映射函数。本章使用粗体大写字母 (Bold-face uppercase), 例如 $\mathbf{B}$ 来代表集合以及粗体小写字母来代表向量, 如 $\mathbf{b}$。 $U$代表向量空间。 \par
+在整章中, 我们使用书法大写字母 (Calligraphic Uppercase), 例如 $\mathcal{X}$ 来表示映射函数。本章使用粗体大写字母 (Bold-face uppercase), 例如 $\mathbf{B}$ 来代表集合以及粗体小写字母来代表向量, 如 $\mathbf{b}$。 $U$代表向量空间。 \par
 \textbf{问题定义:} 假设 $\mathbf{X}=\{k\}_{i=1}^N=\mathbf{V} \cup \mathbf{T}$ 是一个包含 $N$ 个训练样本的集合, 其中包含了来自visible 模态的行人照片$\mathbf{V}$以及thermal 模态的行人照片$\mathbf{T}$。$I_{k_i} = i$是一个特征函数将图片映射到它的索引。$\mathcal{S}: N * N \rightarrow\{0,1\}$是一个相似性映射函数。 $\mathcal{S}_{ij} = 1$ 如果 $k_i$ 和 $ k_j$ 图片是属于来自同一个人的照片。  $\mathcal{S}_{ij} = 0$ 如果 $k_i$ 和 $ k_j$ 图片是属于来自不同人的照片。 $\mathbf{P}=\left\{\left\{k_p, k_q: S_{p q}=1\right\}: p, q \in N\right\}$ 是一个包含了所有同一个行人图片对的集合。监督VT-ReID的目标就学习两个特征映射函数 $\mathcal{F}_V: \mathbf{V} \rightarrow \mathbf{U}$ 和 $\mathcal{F}_T: \mathbf{T} \rightarrow \mathbf{U}$, 其中需要满足: 给定任意的在检索图片集中的一张行人照片, 例如来自visible 模态的检索照片 $\mathbf{V}^{\prime} \subset \mathbf{V}$ 以及一个数据库 $\mathrm{T}^{\prime} \subset \mathrm{T}$, 找到 图片 $k \in \mathbf{T}^{\prime}$ 其中 $S_{I_v I_k}=1$。\par
 本章提出一个基于深度学习的框架用于VT-ReID, 这个框架集成了增强的特征学习以及度量学习, 并且基于一种端到端的优化方法进行直接优化, 整个框架图如图~\ref{fig:arch}。
 \subsection{混合双流特征提取架构}
@@ -225,7 +224,7 @@ Vector 来得到图片的一个全局的特征向量。 Cheng 等人~\cite{cheng
 \subsection{与其他先进的方法在标准数据集上的结果比较}
 我们与解决VT-ReID的先进算法模型在标准数据集上进行性能。具体地, 我们包括了几种基于深度学习的最先进的模型进行仔细的分析研究: \textbf{TONE+HCML}~\cite{ye2018hierarchical}, \textbf{cmGAN}~\cite{dai2018cross}, \textbf{Zero-Padding}~\cite{wu2017rgb}和 \textbf{BDTR}~\cite{ye2019bi}。我们也包括了几种其他的方法, 大部分其他算法的性能来自于~\cite{ye2019bi}。 选择进行比较的算法可以主要分成两类: 基于特征提取的方法 (\textbf{HOG}, \textbf{MLBP}, \textbf{LOMO}~\cite{liao2015person}), 基于匹配模型的方法 (\textbf{XQDA}, \textbf{GSM}~\cite{lin2016cross}, , \textbf{SCDL}~\cite{wang2012semi}, \textbf{rCDL}~\cite{huang2013coupled}, \textbf{MLAPG}~\cite{liao2015efficient})。我们额外加入两个在单模态行人重识别上的先进算法 \textbf{SVDNet}~\cite{sun2017svdnet} 和 \textbf{PCB}~\cite{sun2018beyond} 进行比较。\par
 如表格~\ref{table:visiblethermalRegdb} 以及表格~\ref{table:visiblethermalsysu}所示, 本章提出的模型\textbf{MAENet}在 \textbf{RegDB} 和 \textbf{SYSU-MM01}数据集上与现有的先进算法相比较均取得了较大的性能提升。 很明显, 在\textbf{RegDB} 数据集上, 本章的算法比第二先进的算法\textbf{BDTR}在提高了 $13.1 \%$
-的\textbf{mAP}, 在$Rank-1$准确度上提高了接近$13.8$。 而在~\textbf{SYSU-MM01} 数据集上 \textit{single-shot all search}场景下, \textbf{MAENet} 也取得了非常优秀的性能表现, 比\textbf{BDTR}提高了 $13.25 \%$ \textbf{mAP}。
+的\textbf{mAP}, 在$Rank-1$准确度上提高了接近$13.8 \%$。 而在~\textbf{SYSU-MM01} 数据集上 \textit{single-shot all search}场景下, \textbf{MAENet} 也取得了非常优秀的性能表现, 比\textbf{BDTR}提高了 $13.25 \%$ \textbf{mAP}。
 
 \begin{table}[!htpb]
   %% \centering % not needed
@@ -296,9 +295,6 @@ Vector 来得到图片的一个全局的特征向量。 Cheng 等人~\cite{cheng
   \end{tabular}
   \label{table:sysuindoor}
 \end{table}
-同时, 我们也在 \textbf{SYSU-MM01} (single-shot indoor search)模式下进行了实验。 室内模式的场景排除了在室外的摄像头所拍摄的所有的行人照片。 首先, 由表~\ref{table:sysuindoor}所示, 本章提出的框架~\textbf{MAENet}在各个评价指标上均显著超越所有比较的方法。 \textbf{MAENet} 获得了$49.68 \%$ \textbf{mAP} 和 $38.54 \%$ $Rank-1$准确度, 比第二高的评估结果分别高出$7.5$和$6.6$个百分点。 同时, 和表~\ref{table:visiblethermalRegdb}和~\ref{table:visiblethermalsysu}相似, 单模态的重识别算法 ~\textbf{SVDNet}和~\textbf{PCB}取得的结果仍然不理想。同时, 基于非深度学习的方法依然不能得到令人满意的性能。但是相比较在(single-short all search) 场景下, 所有算法均取得了比较大的性能提升。 例如, 相比较而言, ~\textbf{GSM} 取得了 $15.57 \%$ ~\textbf{mAP}, 提升了 $7.57 \%$。单模态的行人重识别算法如~\textbf{PCB}的性能提升更为显著, 获得了 $14.2 \%$的性能提升。本章的算法 ~\textbf{MAENet} 也在\textbf{mAP}上提升了 $13.57$个百分点。 这些性能的提升是由于 (indoor search) 场景排除了室外的照片, 因此模态内的变化显著降低, 从而也极大的降低了重识别的难度。
-\subsection{消融实验结果分析}
-在这一小节, 我们仔细并且彻底的分析本章提出的框架中各个部分的损失函数对整个模型性能的影响。我们分别设计了几个变种模型如下所示:
 
 
 \begin{figure}[!htp]
@@ -340,6 +336,12 @@ Vector 来得到图片的一个全局的特征向量。 Cheng 等人~\cite{cheng
   \label{fig:ablation_res}
 \end{figure}
 
+同时, 我们也在 \textbf{SYSU-MM01} (single-shot indoor search)模式下进行了实验。 室内模式的场景排除了在室外的摄像头所拍摄的所有的行人照片。 首先, 由表~\ref{table:sysuindoor}所示, 本章提出的框架~\textbf{MAENet}在各个评价指标上均显著超越所有比较的方法。 \textbf{MAENet} 获得了$49.68 \%$ \textbf{mAP} 和 $38.54 \%$ $Rank-1$准确度, 比第二高的评估结果分别高出$7.5$和$6.6$个百分点。 同时, 和表~\ref{table:visiblethermalRegdb}和~\ref{table:visiblethermalsysu}相似, 单模态的重识别算法 ~\textbf{SVDNet}和~\textbf{PCB}取得的结果仍然不理想。同时, 基于非深度学习的方法依然不能得到令人满意的性能。但是相比较在(single-short all search) 场景下, 所有算法均取得了比较大的性能提升。 例如, 相比较而言, ~\textbf{GSM} 取得了 $15.57 \%$ ~\textbf{mAP}, 提升了 $7.57 \%$。单模态的行人重识别算法如~\textbf{PCB}的性能提升更为显著, 获得了 $14.2 \%$的性能提升。本章的算法 ~\textbf{MAENet} 也在\textbf{mAP}上提升了 $13.57$个百分点。 这些性能的提升是由于 (indoor search) 场景排除了室外的照片, 因此模态内的变化显著降低, 从而也极大的降低了重识别的难度。
+\subsection{消融实验结果分析}
+在这一小节, 我们仔细并且彻底的分析本章提出的框架中各个部分的损失函数对整个模型性能的影响。我们分别设计了几个变种模型如下所示:
+
+
+
 
 \begin{enumerate}
   \item \textbf{Id}: 仅仅包含身份分类的损失函数$L_{Identity}$
@@ -352,4 +354,4 @@ Vector 来得到图片的一个全局的特征向量。 Cheng 等人~\cite{cheng
 由图~\ref{fig:ablation_res}可知, 仅包含分类损失函数的模型 \textbf{Id} 在~\textbf{SYSU-MM01} 和 \textbf{RegDB}上的所有测试场景均只能取得最低的性能。这是由于 \textbf{Id} 并不能有效的降低类内变化以及跨模态变化带来的影响。当加上 $L_{Inter}$损失函数后, 如图中的蓝色曲线所示, 模型在各个场景下都取得了性能上的提升。这是由于 $L_{Inter}$可以较大的对齐两个模态的特征, 降低跨模态差异带来的负面影响。同时当进一步加上$L_{Intra}$时, 如绿色曲线所示, 模型的性能进一步提升, 甚至可以显著的超越 \textbf{BDTR} 的性能。最终, 当我们加上本章提出的创新性的模态以及外表恒定的模块时候, 如红色曲线所示, 我们可以看到性能的显著提升。在 visible-to-thermal重识别场景, 这个模块在 \textbf{RegDB} 和 \textbf{SYSU-MM01} (all search)数据集上, 将$Rank1$准确率从$27.28 \%$, $24.93 \%$ 分别提升到了$44.32\%$ $32.33 \%$。在 thermal-to-visible的重识别场景中, 也可以观察到类似的性能提升。在 \textbf{RegDB}中$Rank1$ 准确度从 $25.00 \%$ 提升到了 $45.34 \%$ 而在 \textbf{SYSU-MM01} (indoor search) 从 $33.56 \%$ 提升到了 $37.86 \%$。这些显著的性能提升是由于我们提出的模态恒定以及外观恒定的网络以及损失函数可以帮助有效的对齐两个模态的特征, 降低模态间的差异, 降低跨模态变化以及模态内同一行人的不同变化带来的影响, 证实了这些不同的模块的有效性。
 
 \section{总结}
-本章针对图像检索的一个经典的应用行人重识别进行了深入的研究。本章针对行人重识别问题的一个非常具有挑战性的子问题-"跨模态行人重识别"进行了建模。 我们提出了一个崭新的神经网络框架以及对应的优化损失函数来进行学习。为了应对跨模态行人重识别的模态差异的带来的影响(Modality Discrepancy), 本章采取双流卷积神经网络分别将visible和thermal模态的照片映射到可比较的特征空间。同时, 基于autoencoder, 我们提出了一个模态和外表恒定的自编码网络架构 （modality and apperance invariant reconstructive embedding） 来提取出对于模态和外表都不变的特征。 为了进行重识别任务, 本章基于最大似然估计提出两种基于成对图片的重识别损失函数来进一步对齐两个模态的特征, 以及应对跨模态（Inter-modality Variation）和模态内的变化 (Intra-modality Variation)。
+本章针对图像检索的一个经典的应用行人重识别进行了深入的研究。本章针对行人重识别问题的一个非常具有挑战性的子问题- ``跨模态行人重识别"进行了建模。 我们提出了一个崭新的神经网络框架以及对应的优化损失函数来进行学习。为了应对跨模态行人重识别的模态差异的带来的影响(Modality Discrepancy), 本章采取双流卷积神经网络分别将visible和thermal模态的照片映射到可比较的特征空间。同时, 基于autoencoder, 我们提出了一个模态和外表恒定的自编码网络架构 （modality and apperance invariant reconstructive embedding） 来提取出对于模态和外表都不变的特征。 为了进行重识别任务, 本章基于最大似然估计提出两种基于成对图片的重识别损失函数来进一步对齐两个模态的特征, 以应对跨模态（Inter-modality Variation）和模态内的变化 (Intra-modality Variation)。

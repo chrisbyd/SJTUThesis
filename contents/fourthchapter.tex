@@ -1,5 +1,5 @@
 % !TEX root = ../main.tex
-\chapter{基于视觉 Transformer的大规模图像检索算法}
+\chapter{基于自注意力机制的通用大规模检索}
 由于其检索的速度以及较低的内存开销, 深度哈希在大规模图像检索领域获得了广泛的关注。直到本章的算法提出前, 这个领域的所有的深度哈希模型都是基于卷积神经网络而设计, 例如, \textbf{ResNet}~\cite{he2016deep}, \textbf{AlexNet}等。在本章中, 受最近Vision Transformer架构的启发, 我们设计了第一个完全基于Vision Transformer的深度哈希架构来进行大规模的图像检索。具体来说, 我们的架构包含两个基本的模块: (1) 基于Vision Transformer (ViT), 我们设计了一个孪生Vison Transformer的主干架构来进行特征提取。为了学习细粒度的特征, 我们设计了一个双流特征学习的Transformer块来同时学习局部和全局的特征。(2)同时, 我们采取一个基于动态创建的相似度矩阵作为监督标签设计的贝叶斯学习框架来学习相似度保持的紧凑的二进制哈希编码。整个框架是通过一种端到端的方法同一训练。据我们所知, 本章提出的深度哈希框架是第一个完全不基于卷积神经网络的深度哈希学习框架。本章的算法在三个被广泛研究的标准数据集上进行全方面的测试, 数据集包括:~\textbf{CIFAR-10},~\textbf{NUSWIDE},~和~\textbf{IMAGENET}。数据结果证实了我们的方法和现阶段的先进的深度哈希算法比较具有极高的性能的优越性。在三个数据集上, 我们比较第二优越的算法分别获得了 $8.2\%$, $2.6 \%$和$12.7\%$的性能增长。
 
 \section{引言}
@@ -13,7 +13,6 @@
       {For an image pair (A,B), we cut them into several patches. Then every patch is flattened and projected to a fix-sized embedding with a fully connected layer, resulting in a sequence of embeddings. Subsequently, we add a classification token in the front of each sequence. Then, two sequences are fed into the Siamese transformer architecture. At last, we add a hash layer projecting the feature into B-bit hash vectors. The Bayesian learning module is employed to preserve the similarity in the \textit{Hamming} space for each pair. }
    \label{fig:subfig}
 \end{figure} 
-
 基于手工特征的浅层次哈希方法一般是通过基于人工设计的视觉特征描述符来进行哈希函数的学习~\cite{charikar2002similarity, indyk1997locality, weiss2008spectral}, 例如 \textbf{GIST}~\cite{oliva2001modeling}等。经典的浅层次哈希方法有~\textbf{LSH}~\cite{indyk1997locality}, 其主要思想是将相似的高维数据以比较大的概率被映射到相近的哈希编码中。然而由于基于手工提取的特征向量其实并不能准确的刻画保存原图片的有区别性的信息, 这导致了基于手工特征的哈希算法有一道无法逾越的性能鸿沟。为了减轻这个问题的影响, 随着AlexNet~\cite{alexnet}的提出, 基于深度学习的特征提取方法开始成为计算机视觉领域的主流。基于深度学习的模型~\cite{dosovitskiy2020image, russakovsky2015imagenet}相比较基于手工特征的方法通常而言可以获得显著的性能提升。基于深度学习的哈希学习方法一般包含两个阶段。 第一阶段致力于基于深度卷积神经网络, 例如 \textbf{AlexNet}等, 学习有判别性的特征。第二阶段包含设计各种非线性的函数来将连续性的神经网络输出转化成固定的哈希长度的二进制哈希码, 并且通过各种度量学习的损失函数~\cite{cakir2019hashing,cao2018deep,erin2015deep,gong2012iterative, li2015feature}来在汉明空间保存其对应的图片的视觉相似性。 \par
 最近, Transformer~\cite{vaswani2017attention}模型展示了其在自然语言领域的卓越性能~\cite{brown2020language, devlin2018bert}。随后, Google设计了 Vision Transformer~\cite{dosovitskiy2020image}, 一种基于 Transformer的变种, 正式将Transformer引入进计算机视觉领域。Vision Transformer 开始在各个计算机视觉任务上超越传统基于卷积神经网络的模型(例如, 图像分类~\cite{dosovitskiy2020image}, 行人重识别~\cite{he2021transreid},等)。如图~\ref{fig:subfig}所示, Vision Transformer 通过首先将输入的图片分割成一系列的2D图片块。 随后, 将图片块转换成向量并且通过可以学习的转换矩阵来将向量降维成低维度的特征表示。 随后, 一系列的输入向量可以被输入进标准的Transformer的编码器架构来学习特征表示。受Vision Transformer的高性能表现的启发, 我们思考完全基于Vision Transformer设计一个深度哈希框架的可行性。\par
 在本章中, 我们基于Transformer 设计了一个新型的深度哈希框架-\textbf{TransHash}, 这是有史以来第一个不基于卷积神经网络作为主干网络来进行特征学习的深度哈希架构。具体而言, 为了进行成对的哈希学习, 我们设计了一个孪生多粒度Vision Transformer主干网络 (Multi-Granular Vision Transformer, MGVT)。它包含了两个完全一致的多粒度学习的Transformer网络, 并且这两个网络是完全共享所有参数~\cite{bromley1993signature}。具体而言, 为了进行多粒度的学习, 我们受\textbf{TransReID}~\cite{he2021transreid}所启发, 我们在传统的Vision Transformer的最后一层上设计了一个双流特征学习机制, 将最后一个Transformer块设计成两个并行的分支。对于第一个分支, 它是用来进行全局特征的学习。对于并行的第二个分支, 我们将前一个Transformer块的输出序列进行重新分组成$K$个序列组。这$K$个序列组的序列前都被添加了共享的用于分类的嵌入表征。随后, 将这$K$个序列分别输入进最后一个Transformer层来输出$K$个局部的特征。通过这样的方法, 我们可以通过全局和局部的网络架构设计同时学习到粗粒度的全局特征以及细粒度的局部特征。同时, 我们的模型还可以取得和Lai等人的工作~\cite{lai2015simultaneous}相似的效果。通过将哈希码的表征变成多个分支的哈希码的拼接, 类似于Lai等人提出的 divide-and-encode模块, 可以降低哈希码的冗余性。为了在特征空间保持原来图片的语义相似性, 我们提出采取基于贝叶斯学习的框架来将相似的图片对在特征空间中尽量拉近, 而将不相似的图片在特征空间中尽量拉远。最终, 由于基于卷积神经网络学习到的特征表示是连续的, 我们需要采用\textit{Sign}函数从将连续的表示生成离散的二进制哈希码。但是, 由于离散的哈希码$h$和连续的特征表示$f$之间存在鸿沟, 也就是``量化误差''~\cite{zhu2016deep}的存在, 直接在测试阶段使用\textit{sign}函数只能取得次优的检索性能。为了缩小量化误差, 减轻在测试阶段的性能损失, 我们将相似度保持学习重新规划成一个受限制的优化问题。具体做法是在之前的贝叶斯学习框架后加上一个科西分布量化损失来在训练阶段缩短连续的特征表示和二进制哈希码之间的差距。\par
@@ -21,7 +20,7 @@
 \begin{enumerate}
     \item 本章设计了一个基于Vision Transformer的孪生多粒度Vision Transformer主干网络(Multi-Granular Vision Transformer, MGVT)。在传统的Vision Transformer的最后一层, 我们通过将其最后一层设计成一个并行的两个独立的分支, 设计一个新型的双流特征学习框架。 通过这种方法, 我们可以同时学习全局和局部的特征表示。同时, 如前所述, 它也可以进一步提高最后学习到的哈希向量各个位之间的独立性。
     \item 通过采用一个基于贝叶斯的相似度保持的贝叶斯学习模块以及一个量化损失的限制, 我们实现了第一个完全基于Transformer的深度哈希框架-\textbf{TransHash}来进行大规模的图像检索。据我们所知, 这是第一个不基于卷积神经网络的进行大规模图像检索的深度哈希框架。
-    \item 我们在三个标准的检索数据集-\textbf{CIFAR-10}, \textbf{NUSWIDE} 和~\textbf{IMAGENET}-设计并且进行了一系列的全面的实验。实验结果表明了本章提出的框架-\textbf{TransHash}-具有优越的性能表现, 以大幅度领先当时的先进的深度哈希算法。
+    \item 我们在三个标准的检索数据集-\textbf{CIFAR-10}, \textbf{NUSWIDE} 和~\textbf{IMAGENET}-设计并且进行了一系列的全面的实验。实验结果表明了本章提出的框架-\textbf{TransHash}-具有优越的性能表现, 相比较当时的深度哈希算法而言可以获得明显的性能提升。
 \end{enumerate}
 
 \section{相关工作}
@@ -327,7 +326,7 @@ $(I_i,I_j)$, 我们可以通过将图片对输入进孪生Vision Transformer得�
 
 
 
-第二个原因是在\textbf{ImageNet}上相似的图片对和不相似图片对的比例比~\textbf{CIFAR-10}更加严重, 造成了数据不平衡问题, 大大降低了检索的模型性能~\cite{zhang2019improved,liu2016deep12}。\textbf{TransHash}通过动态的对每一个图片对分配一个权重来解决这个问题~ \cite{cao2017hashnet}。在\textbf{NUSWIDE}数据集上, 本章提出的算法也可以在四种哈希长度上均超越所有比较的算法。算法取得的性能提升相比较在其他两个数据集上没有显著的原因主要是因为~\textbf{TransHash}并不是针对多标签检索的场景。\par
+第二个原因是在\textbf{ImageNet}上相似的图片对和不相似图片对的比例比~\textbf{CIFAR-10}更加严重, 造成了数据不平衡问题, 大大降低了检索的模型性能~\cite{zhang2019improved,liu2016deep}。\textbf{TransHash}通过动态的对每一个图片对分配一个权重来解决这个问题~ \cite{cao2017hashnet}。在\textbf{NUSWIDE}数据集上, 本章提出的算法也可以在四种哈希长度上均超越所有比较的算法。算法取得的性能提升相比较在其他两个数据集上没有显著的原因主要是因为~\textbf{TransHash}并不是针对多标签检索的场景。\par
 
 
 \begin{figure}[!htp]

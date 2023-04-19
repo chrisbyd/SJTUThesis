@@ -4,7 +4,7 @@
 近些年来, 由于互联网的普及, 计算机技术的发展和各种社交网络的兴起, 视频和图片数据以爆炸性的速度快速增长。如何对海量的图像数据进行处理以及分析促进了一系列的计算机视觉技术的飞速发展,图像检索技术是其中一个核心研究方向。早期基于文本的图像检索极大依赖于标注者的主观判断的标签,检索效率以及性能低下的同时需要耗费大量的人力资源, 难以应用于海量的互联网图像数据检索中。基于内容的的图像检索（Content Based Image Retrieval, CBIR）通过算法自动提取图像的视觉特征来衡量图片之间的相似度, 从而实现在数据库中进行图像检索的目的，极大的节省了人工标注耗费的人力、物力和财力。为了提高检索速度以及降低存储开销，哈希编码以及量化编码方法被广泛应用到了图像检索领域，成为解决超大规模图像检索问题的重要解决方案。 本章重点介绍大规模图像检索算法的研究背景以及意义，概要的介绍了图像检索算法发展历史, 详细介绍了基于深度哈希的大规模的图像检索算法。 本章最后介绍了这篇论文的章节安排以及概括介绍每个章节包含的主要内容。
 \section{本研究的背景及意义}
 在大数据、移动互联网、计算机技术、传感器技术、云计算等前沿技术的发展以及经济社会急速发展的需求下, 人工智能（Artificial Intelligence）作为被视为驱动新一轮产业变革的技术受到了世界各国的广泛关注。 广义的人工智能\cite{russell2010artificial} 包含对大数据的处理分析，自动推理能力，学习能力，以及解决问题的能力。而对以往存储的大数据信息的检索是后续学习与分析的基石，而图像检索便是其中关键的一部分。 \par
-基于内容图像检索自从1990年代以来便受到了计算机视觉研究人员广泛的探索~\cite{zhou2017recent}。典型的图像检索一般是指从图片中进行特征提取，完成从原始图像空间到特征空间的映射，同时图片的特征应当保留原始图片的语义一致性。语义相似的图片的特征应当尽量接近，相反，语义不同的图片特征应该尽量远离。早期基于人工特征如 (SIFT , GIST, etc ) 的图像检索方法一般面临 ``语义鸿沟'' \cite{li2016socializing} 带来的难题, 基于人工提取构建的低层次特征难以真实描绘保存高层次的语义特征。2012年, Krizhevsky 等人提出 ALexNet~\cite{krizhevsky2017imagenet} 并且在大规模视觉识别挑战赛中以比第二名低 $10.8\%$ 的 top-5 错误率的性能取得了冠军。自此, 基于深度学习进行端对端的特征学习方法成为了计算机视觉领域的主流。通过设计不同的卷积神经网络（Convolutional Neural Network, CNN）主干结构,以及采用不同度量学习损失函数, 基于深度学习的图像检索方法取得了引人注目的精度提升。自2021年来, Google 首次将自然语言处理领域的基于自注意力机制 （Self-attention Mechanism）的深度学习模型 Transformer 应用到了计算机视觉领域, 并且在多个任务达到最先进水平。由于视觉 Transformer 具有较低的归纳偏置 (inductive bias), 在具有大规模监督数据的领域，它取得了比 CNN 更优异的图像表征学习能力。 因此探究其在图像检索领域的应用，也成为了当前的研究热点之一。  \par
+基于内容图像检索自从1990年代以来便受到了计算机视觉研究人员广泛的探索~\cite{zhou2017recent}。典型的图像检索一般是指从图片中进行特征提取，完成从原始图像空间到特征空间的映射，同时图片的特征应当保留原始图片的语义一致性。语义相似的图片的特征应当尽量接近，相反，语义不同的图片特征应该尽量远离。早期基于人工特征如 (SIFT , GIST, etc ) 的图像检索方法一般面临 ``语义鸿沟'' \cite{li2016socializing} 带来的难题, 基于人工提取构建的低层次特征难以真实描绘保存高层次的语义特征。2012年, Krizhevsky 等人提出 ALexNet~\cite{krizhevsky2017imagenet} 并且在大规模视觉识别挑战赛中以比第二名低 $10.8\%$ 的 top-5 错误率的性能取得了冠军。自此, 基于深度学习进行端对端的特征学习方法成为了计算机视觉领域的主流。通过设计不同的卷积神经网络（Convolutional Neural Network, CNN）主干结构,以及采用不同度量学习损失函数, 基于深度学习的图像检索方法取得了引人注目的精度提升。自2021年来, Google 首次将自然语言处理领域的基于自注意力机制 （Self-attention Mechanism）的深度学习模型 Transformer 应用到了计算机视觉领域, 并且在多个任务达到最先进水平。由于视觉 Transformer 具有较低的归纳偏置 (Inductive Bias), 在具有大规模监督数据的领域，它取得了比 CNN 更优异的图像表征学习能力。 因此探究其在图像检索领域的应用，也成为了当前的研究热点之一。  \par
 另一方面，在图像领域的实际应用中。由于现在自媒体社交网络、计算机硬件、互联网技术以及数字成像技术的飞速发展，图像数据库的数据量也以爆炸性的速度急剧增长。例如， 据估计社交网络巨头 Facebook 公司用户每日上传的图片数据接近3.5亿，而 Flicker 公司每日的图像数据也达到接近1600万。传统的基于深度学习的检索方法一般采用2048维度的64位浮点向量, 存储每一张图片需要占用16 千字节 （Kilobyte, KB）。同时, 由于一般使用欧式距离或者余弦距离来刻画图片在特征向量空间的相似度，计算开销大，检索速度慢，无法满足极大规模图像检索对于存储以及检索速度的要求。 基于深度哈希的检索方法由于将图像映射成低维二进制向量，使用汉明距离或者非对称距离计算相似度，是大规模图像检索的理想的解决方案。探究如何提高其性能具有较高的学术价值，以及工业应用价值。\par
 本文致力于探究大规模的图像检索技术, 提高图像检索的可扩展性，以及检索性能，具有以下方面的重要应用价值:
 \begin{enumerate}
@@ -24,22 +24,22 @@
 
 基于全局特征提取的算法通常基于纹理特征~\cite{park2002fast,wang2014content}、图片色彩~\cite{wang2011interactive}\cite{wengert2011bag}、 轮廓~\cite{wang2006large}来描述图片的内容，并且生成一个全局的表征向量。GIST~\cite{friedman1979framing,torralba2003context} 是一种典型的全局特征提取算法被广泛应用在检索领域, 由于其不需要对图像进行分割以及进行局部特征提取, 具有计算复杂度低以及运行速度快等优势~\cite{zhou2017recent}。然而, 基于全局特征提取的方法很难保留局部的细粒度特征, 难以取得优异的性能。
 \subsubsection{基于局部特征提取}
-基于局部特征提取的方法一般包含三个关键的步骤~\cite{zhou2017recent}: ``\textbf{兴趣点检测}''、 ``\textbf{特征描述}''、 ``\textbf{特征融合}''。``\textbf{兴趣点检测}'' 是指通过算法, 可靠的标注出图像中包含关键内容的角点。在2003年， Google的视频检索系统采用了 MSER~\cite{matas2004robust}检测器取得了仿射不变的特征点检测效果。 之后，Lowe 等人提出了 Hessian-affine 检测器~\cite{lowe2004distinctive}, 可以生成仿射不变（affine-invariant）以及尺度不变 (scale-invaraint)的特征， 以及一定程度上可以对光照条件以及观察点的改变不敏感的特征，随后被广泛应用在检索领域~\cite{philbin2007object}。在2006年， FAST~\cite{rosten2008faster} 通过判断一个像素与周围的连续像素是否处于一个灰度区间判断其是否是一个角点, 具有检测速度快的优点, 但是不具备仿射以及尺度不变性。 在提取完兴趣点后， ``\textbf{特征描述}'' 算法从兴趣点所在的局部视觉特征提取出特征描述子 （descriptor）。一般的特征描述子应该具有旋转不变性、仿射不变性以及对噪声以及光照改变不敏感等特性~\cite{zhou2017recent}。SIFT ~\cite{lowe2004distinctive}算法是最常被使用的局部特征提取算法。SIFT 通过高斯差分函数 （DoG）识别对尺度以及旋转不变的关键点，通过计算领域像素梯度为每个关键点分配方向角度从而实现旋转不变性。最后再为每个关键点计算光照视角不变的128维的特征描述子。随后, PCA-SIFT~\cite{ke2004pca} 通过降低SIFT生成的特征向量维度来提高匹配的速度。2012年, 另一个基于SIFT的改进算法 RootSIFT~\cite{arandjelovic2012three} 通过对SIFT提取的特征进行L1正则化并且取平凡根, 极大的提高了检索的精度, 成为了基于SIFT特征提取的标准算法。 SURF~\cite{bay2006surf} 是另一种常用的特征提取方法, 在取得与SIFT接近的检索精度的同时，提高了检索的速度。 ``\textbf{特征融合}''将SIFT或者SURF生成的多个局部特征描述子融合生成一个全局特征向量, 便于后续图片检索计算。常用的有特征融合方法有 BoF (Bag of Features, Bag of Visual Words) 、 VLAD （Vector of Local Aggregated Descriptors）和 FV （Fisher Vector）三种。
+基于局部特征提取的方法一般包含三个关键的步骤~\cite{zhou2017recent}: ``\textbf{兴趣点检测}''、 ``\textbf{特征描述}''、 ``\textbf{特征融合}''。``\textbf{兴趣点检测}'' 是指通过算法, 可靠的标注出图像中包含关键内容的角点。在2003年， Google的视频检索系统采用了 MSER~\cite{matas2004robust}检测器取得了仿射不变的特征点检测效果。 之后，Lowe 等人提出了 Hessian-affine 检测器~\cite{lowe2004distinctive}, 可以生成仿射不变（affine-invariant）以及尺度不变 (scale-invariant)的特征， 以及一定程度上可以对光照条件以及观察点的改变不敏感的特征，随后被广泛应用在检索领域~\cite{philbin2007object}。在2006年， FAST~\cite{rosten2008faster} 通过判断一个像素与周围的连续像素是否处于一个灰度区间判断其是否是一个角点, 具有检测速度快的优点, 但是不具备仿射以及尺度不变性。 在提取完兴趣点后， ``\textbf{特征描述}'' 算法从兴趣点所在的局部视觉特征提取出特征描述子 （descriptor）。一般的特征描述子应该具有旋转不变性、仿射不变性以及对噪声以及光照改变不敏感等特性~\cite{zhou2017recent}。SIFT ~\cite{lowe2004distinctive}算法是最常被使用的局部特征提取算法。SIFT 通过高斯差分函数 （DoG）识别对尺度以及旋转不变的关键点，通过计算领域像素梯度为每个关键点分配方向角度从而实现旋转不变性。最后再为每个关键点计算光照视角不变的128维的特征描述子。随后, PCA-SIFT~\cite{ke2004pca} 通过降低SIFT生成的特征向量维度来提高匹配的速度。2012年, 另一个基于SIFT的改进算法 RootSIFT~\cite{arandjelovic2012three} 通过对SIFT提取的特征进行L1正则化并且取平凡根, 极大的提高了检索的精度, 成为了基于SIFT特征提取的标准算法。 SURF~\cite{bay2006surf} 是另一种常用的特征提取方法, 在取得与SIFT接近的检索精度的同时，提高了检索的速度。 ``\textbf{特征融合}''将SIFT或者SURF生成的多个局部特征描述子融合生成一个全局特征向量, 便于后续图片检索计算。常用的有特征融合方法有 BoF (Bag of Features, Bag of Visual Words) 、 VLAD （Vector of Local Aggregated Descriptors）和 FV （Fisher Vector）三种。
 \subsection{基于深度学习的主干网络发展}
 近些年来，深度学习发展迅猛。深度学习通过神经网络训练，以端到端的方式进行特征学习，有强大的表征能力，在计算机视觉领域以绝对的性能优势超越传统基于手工设计特征的算法。在图像检索领域，基于深度学习的算法也已经成为了当前的主流。我们以时间为轴, 梳理展示在图像检索领域使用的基础主干神经网络架构发展。
 \subsubsection{卷积神经网络}
 卷积神经网络（CNN）在1980年代开始被应用于视觉领域的任务。1989年, LeCun 提出了第一个卷积神经网络\cite{lecun1989backpropagation} 用于手写邮编识别。和早期基于全连接的神经网络相比, 卷积神经网络采用局部连接和权值共享，使得网络更加易于优化，同时降低了模型复杂度，减少了模型过拟合的风险。\par
-1998年, LeNet~\cite{lecun1998gradient} 是一个具有三个卷积层以及两个全连接层的端到端的神经网络结构, 采用反向传播算法（Back propagation）~\cite{rumelhart1986learning} 进行梯度下降训练。LeNet在手写数字识别的任务中取得了不错的效果, 被视为当代卷积神经网络的雏形。\par
+1998年, LeNet~\cite{lecun1998gradient} 是一个具有三个卷积层以及两个全连接层的端到端的神经网络结构, 采用反向传播算法（Back Propagation）~\cite{rumelhart1986learning} 进行梯度下降训练。LeNet在手写数字识别的任务中取得了不错的效果, 被视为当代卷积神经网络的雏形。\par
 在大规模的训练数据集的出现, 例如 Pascal 和 ImageNet, 以及计算机硬件算力极速增长的背景下, 2022年, Krizhevsky~\cite{krizhevsky2017imagenet} 提出一个深层的卷积神经网络 AlexNet, 在ImageNet 大规模视觉识别挑战（ILSVRC 2012）中获得冠军。AlexNet 一共包含8层， 由五个卷积层和3个全连接层组成, 包含了6000万的参数量。AlexNet首次采用 ReLU~\cite{glorot2011deep} 激活函数, 证明在深层网络训练中, ReLU 明显优于之前通用的 Sigmoid 激活函数, 解决了Sigmoid激活在深层次网络结构中会导致梯度弥散的问题。 同时AlexNet 在训练时采取 Dropout ~\cite{srivastava2014dropout} 策略，以一定概率随机失活一部分神经元,降低模型的过拟合风险。同时，其也采用了数据增强的技术增大了模型的泛化能力。AlexNet 首次设计深度神经网络并且成功解决大规模的图像识别任务, 开启了深度学习研究以及应用的大浪潮，成为了计算机视觉任务的主流基础网络架构。 \par
 2014年, Simonyan and Zisserman~\cite{simonyan2014very} 提出了 VGG 网络。 VGG 从网络结构深度的角度来提升CNN的性能。通过使用3*3的小尺寸卷积核作为所有卷积层的标准, VGG 包括了最低11层到最高19层 （VGG-11、 VGG-13、 VGG-16、 VGG-19）等变种, 证明了提高模型的深度可以更好的学习图像中的视觉特征。 随后 GoogLeNet~\cite{szegedy2015going} 提出同时学习多尺度的图像特征。通过同时使用不同大小的卷积核（5*5、3*3、1*1）对图像进行卷积操作, 以及在通道维度进行拼接, 可以学习不同粒度的图像特征。\par
-神经网络设计在网络结构深度方面的探究遇到了瓶颈。经验角度来看, 增加网络的层数可以帮助提取复杂的图像特征, 从而取得更好的结果。然而, 研究人员发现深度学习训练时一味的增加网络层数, 模型训练准确度在测试时会在饱和后开始急剧下降, 也就是面临模型退化的难题。导致训练失败的主要原因是深层网络训练的梯度消失和梯度爆炸。为了解决这个问题, 2015年, Kaiming He 提出了残差网络 ResNet~\cite{he2016deep}。 ResNet 提出恒等映射 （Identity mapping）和 残差映射 （Residual Mapping）来解决梯度消失或者弥散的问题, 在 ILSVRC-2015 夺得冠军, 成为了主流计算机视觉领域任务的基础主干模型。\par
+神经网络设计在网络结构深度方面的探究遇到了瓶颈。经验角度来看, 增加网络的层数可以帮助提取复杂的图像特征, 从而取得更好的结果。然而, 研究人员发现深度学习训练时一味的增加网络层数, 模型训练准确度在测试时会在饱和后开始急剧下降, 也就是面临模型退化的难题。导致训练失败的主要原因是深层网络训练的梯度消失和梯度爆炸。为了解决这个问题, 2015年, Kaiming He 提出了残差网络 ResNet~\cite{he2016deep}。 ResNet 提出恒等映射 （Identity Mapping）和 残差映射 （Residual Mapping）来解决梯度消失或者弥散的问题, 在 ILSVRC-2015 夺得冠军, 成为了主流计算机视觉领域任务的基础主干模型。\par
 2017年的CVPR的最佳论文 DenseNet ~\cite{huang2017densely} 提供另一种解决梯度消失的方案。通过在每个DenseNet 块中对每个卷积层生成的特征图进行连接, 加强了特征重用，大幅度降低了模型的参数量, 也缓解了模型退化的问题。 \par
 利用深度的卷积神经网络模型, 计算机视觉任务取得了惊人的进步, 在如图像识别领域~\cite{xiebaojian,hongtao16,yafeili18,changliang16, chuminnan15, zhuangzhuang16}甚至达到了人类的水平。 然而, 以上基础卷积神经网络模型基于全局图像特征提取, 难以达到人类观察图像时的注意力分配。因此基于注意力的学习机制 （Attention Mechanism）也被引用至视觉领域模型, 帮助CNN 关注局部重点区域特征，提高视觉信息处理的准确性。常见的注意力机制的算法有: ``通道注意力（Channel Attention）'', 在通道的维度生成注意力掩码~\cite{hu2018squeeze,liu2022spatial, zhang2018context,gao2019global,yang2020gated, chen2019you}。 ``空间注意力 (Spatial Attention)'', 在空间域计算生成注意力权重来选择重要的区域特征~\cite{wang2018non,gregor2015draw,mnih2014recurrent, jaderberg2015spatial}。通过引进注意力机制, 深度学习模型对图像特征提取的能力进一步加强, 在图像识别~\cite{zzzl2019, zhangwenxiu, helloxucong}任务的准确度已经超过人类水平, 同时也被引入到多个计算机视觉其余任务中, 如目标检测~\cite{hongyanli1999,jmr2021, lsen2021, xc2019, zwq2020}等。。
 \begin{figure}[!htp]
     \centering
     \includegraphics[width=14cm]{vit.png} \\
     \bicaption[视觉Transformer的基础框架]
-      {视觉转换器的基础架构~\cite{dosovitskiy2020image}}
+      {视觉Transformer的基础架构~\cite{dosovitskiy2020image}}
       {The framework of vision transformer}
    \label{fig:vit}
   \end{figure}
@@ -56,7 +56,6 @@
       {The framework of  Transformer in Transformer}
    \label{fig:tit}
   \end{figure}
-
 其主要模块是基于多头的注意力机制 （Multi-head Attention, MHA）:
 \begin{equation}
     \text { MultiHead }(Q, K, V)=\text {Concat}\left(\text {head}_1, \ldots, \text {head}_{\mathrm{h}}\right) W^O,
@@ -84,12 +83,11 @@
       {The illustration of Shifted Window Multi-head Self Attention }
    \label{fig:swin}
 \end{figure}
-
-在小规模数据集上预训练时, 没有达到CNN的性能, 然而在大规模数据集 （JFT-300M）上训练, Vision transformer 取得更优的图像分类效果。 随后, Vision transformer 开始被应用在多个计算机视觉任务, 如目标检测（Object Detection） ~\cite{carion2020end, zhu2021deformable}、语义分割 （Semantic Segmentation）~\cite{zheng2021rethinking, xie2021segformer, strudel2021segmenter, jin2021trseg, zhu2021unified}、 图像处理 （Image Processing）~\cite{chen2021pre} 等领域。 随后 Touvron等人基于原始Vision transformer提出Deit, 仅在ImageNet上进行训练, 取得 $83.1\%$的分类准确度。 在使用CNN 进行知识蒸馏 （Knowledge Distillation）后, 取得最高达 $85.2\%$的准确度。\par
+在小规模数据集上预训练时, 没有达到CNN的性能, 然而在大规模数据集 （JFT-300M）上训练, Vision Transformer 取得更优的图像分类效果。 随后, Vision Transformer 开始被应用在多个计算机视觉任务, 如目标检测（Object Detection） ~\cite{carion2020end, zhu2021deformable}、语义分割 （Semantic Segmentation）~\cite{zheng2021rethinking, xie2021segformer, strudel2021segmenter, jin2021trseg, zhu2021unified}、 图像处理 （Image Processing）~\cite{chen2021pre} 等领域。 随后 Touvron等人基于原始Vision Transformer提出Deit, 仅在ImageNet上进行训练, 取得 $83.1\%$的分类准确度。 在使用CNN 进行知识蒸馏 （Knowledge Distillation）后, 取得最高达 $85.2\%$的准确度。\par
 
 2021年, 传统的Vision transformer只能刻画图片块之间的联系, 而忽略了一个图片块内部的特征。 为了解决这个问题, 如图\ref{fig:tit}, Han 等人提出一个transformer in transformer的架构, 对原始图片块继续细分成更小的图片块, 并且同时对粗粒度和细粒度的图片块进行建模。随后, CAT~\cite{lin2022cat} 和 Twins~\cite{chu2021twins} 提出交替在层间使用全局以及局部的注意力机制来减少计算复杂度以及提高表征能力。\par
 
-由于如Eq.~\ref{eq:attention}所示, 自注意力力机制的计算复杂度随着图片块数量$N$的增长成平方增长, 使得基础的Vision transformer模型无法应用在高分辨率的视觉任务中。 2021年, ICCV的最佳论文奖得主 Swin Transformer~\cite{liu2021swin}提出在移动窗口内进行自注意力计算 （Shifted-window Self-attention）, 如Fig.~\ref{fig:swin}所示, 图左是在第l层的窗口划分, 其中自注意力的计算局限于红色的窗口内。假设每一个窗口包含$M \times M$个图片块, 那么基于窗口的自注意力机制的计算复杂度 （W-MSA）可以由以下的公式表示:
+由于如Eq.~\ref{eq:attention}所示, 自注意力力机制的计算复杂度随着图片块数量$N$的增长成平方增长, 使得基础的Vision Transformer模型无法应用在高分辨率的视觉任务中。 2021年, ICCV的最佳论文奖得主 Swin Transformer~\cite{liu2021swin}提出在移动窗口内进行自注意力计算 （Shifted-window Self-attention）, 如Fig.~\ref{fig:swin}所示, 图左是在第l层的窗口划分, 其中自注意力的计算局限于红色的窗口内。假设每一个窗口包含$M \times M$个图片块, 那么基于窗口的自注意力机制的计算复杂度 （W-MSA）可以由以下的公式表示:
 
 \begin{figure}[!htp]
     \centering
@@ -103,11 +101,10 @@
 \begin{equation}
     \Omega(\text { W-MSA })=4 h w C^2+2 M^2 hwC.
 \end{equation}
-
-其中$hw$是图片块的数量。由此可知, Swin-transformer 的计算复杂度随着图像大小可以呈线性增长, 具有可扩展性。Swin Transformer在图像分类, 目标检测等领域都达到了最先进的性能, 开始成为计算机视觉领域的主干模型~\cite{tianyonglin22,xsx2022,cyf2023,sxf2023,yuhang2021,  jfh2021, wfp2022,  liu2021swinnet,liu2022video, huang2022swin, cao2021swin, ma2022swinfusion}。在本文中, 我们第一个探索Vision transformer在大规模图像检索领域的应用, 并且取得了优异的性能。
+其中$hw$是图片块的数量。由此可知, Swin-transformer 的计算复杂度随着图像大小可以呈线性增长, 具有可扩展性。Swin Transformer在图像分类, 目标检测等领域都达到了最先进的性能, 开始成为计算机视觉领域的主干模型~\cite{tianyonglin22,xsx2022,cyf2023,sxf2023,yuhang2021,  jfh2021, wfp2022,  liu2021swinnet,liu2022video, huang2022swin, cao2021swin, ma2022swinfusion}。在本文中, 我们第一个探索Vision Transformer在大规模图像检索领域的应用, 并且取得了优异的性能。
 
 \subsection{基于深度特征的图像检索}
-在深度学习时代的图像检索方法主要分为两种: (1) 基于预训练CNN的特征提取 （2）基于任务的微调。早期的基于深度学习的检索方法基于两阶段检索, 即使用在图像分类数据集如ImageNet进行分类任务训练后的CNN代替基于人工的特征提取方法,如SIFT, 进行特征提取, 第二阶段如Sec.~\ref{sec:manual}, 使用 VLAD、 BoW 或者 FV 生成全局的表征向量。 而基于端到端的检索, 则使用图像的监督标签, 端到端训练的生成用于图像检索的表征向量, CNN 会在监督训练的过程中调整学习适用于特定任务的图像特征。
+在深度学习时代的图像检索方法主要分为两种: (1) 基于预训练CNN的特征提取 （2）基于任务的微调。早期的基于深度学习的检索方法主要基于两阶段检索, 即使用在图像分类数据集如ImageNet进行分类任务训练后的CNN代替基于人工的特征提取方法,如SIFT, 进行特征提取。 第二阶段如Sec.~\ref{sec:manual}, 使用 VLAD、 BoW 或者 FV 生成全局的表征向量。 而基于端到端的检索, 则使用图像的监督标签, 端到端训练生成用于图像检索的表征向量, CNN 会在监督训练的过程中调整学习适用于特定任务的图像特征。
 
 \subsubsection{基于预训练CNN的特征提取}
 一部分基于预训练CNN提取特征的工作一般也包含两个阶段: ``特征提取'' 与 ``特征聚合''。``\textbf{特征提取}'': 如图所示, 一部分工作从全连接层得到特征向量
@@ -127,7 +124,7 @@
     \label{eq:mac}
 \end{equation}
 其中 $\mathcal{X}$是卷积生成的特征图, $k$ 是对应的特征图的通道。
-Tolias 等人提出R-MAC~\cite{tolias2015particular}在特征图中分块进行最大池化, 然后再聚合成一个全局特征向量，这样可以保留更多的局部信息，便于检索。Babenko 提出 SPoC~\cite{babenko2015aggregating} 如图 Fig.~\ref{fig:featureagg}, 作者先使用Gaussian weighting对特征图进行加权:
+Tolias 等人提出R-MAC~\cite{tolias2015particular}在特征图中分块进行最大池化, 然后再聚合成一个全局特征向量，这样可以保留更多的局部信息，便于检索。Babenko 提出 SPoC~\cite{babenko2015aggregating} 如图 Fig.~\ref{fig:featureagg}, 作者先使用Gaussian Weighting对特征图进行加权:
 \begin{equation}
     \alpha_{(x, y)}=\exp \left\{-\frac{\left(y-\frac{H}{2}\right)^2+\left(x-\frac{W}{2}\right)^2}{2 \sigma^2}\right\}
     \label{eq:gaussianweight}
@@ -144,16 +141,15 @@ Tolias 等人提出R-MAC~\cite{tolias2015particular}在特征图中分块进行�
 除了通过各种池化操作从卷积特征图生成全局特征向量, 另一部分的工作通过将特征图视为多个局部特征向量的组合, 通过特征编码的方式聚合成一个全局向量。常见的有基于BoW ~\cite{li2016exploiting, mohedano2016bags, zheng2016accurate}特征编码的检索工作, 基于 VLAD~\cite{gong2014multi, yue2015exploiting}的工作以及基于FV~\cite{jegou2011aggregating, sanchez2013image}的工作。 
 
 \subsubsection{基于任务的微调}
-基于预训练CNN特征提取然后进行检索的方法有一个较大的缺陷。基于ImageNet的图像分类任务进行预训练的模型应用在其他的视觉任务, 由于与训练的图像数据和检索任务的图像数据有较大的差异 (Domain Gap), 预训练好的CNN难以在当前任务的图像数据提取出准确的图像特征, 从而无法应用于精确的检索任务中。基于任务的微调方法, 一般通过使用不同的神经网络架构, 采取不同的采样策略, 以及设计不同的损失函数来监督更新CNN的参数。
+基于预训练CNN特征提取然后进行检索的方法有一个较大的缺陷。基于ImageNet的图像分类任务进行预训练的模型在应用在其他的视觉任务时, 由于预训练的图像数据和检索任务的图像数据有较大的差异 (Domain Gap), 预训练好的CNN难以在当前任务的图像数据提取出准确的图像特征, 从而无法应用于精确的检索任务中。基于任务的微调方法一般通过使用不同的神经网络架构, 采取不同的采样策略, 以及设计不同的损失函数来监督更新CNN的参数。
 \begin{figure}[!htp]
     \centering
     \includegraphics[width=15cm]{singlestream.pdf} \\
     \bicaption[基于分类损失函数的图像检索架构]
-      {基与分类损失的CNN架构微调架构。从左至右是输入的图片, 提取特征的主干CNN网络, 以及全连接层和交叉熵损失函数}
+      {基于分类损失的CNN微调架构。从左至右是输入的图片, 提取特征的主干CNN网络, 以及全连接层和交叉熵损失函数}
       {The framework of convolutional Neural Network based image retrieval with categorial loss. The input images are on the left. The middle is the convolutional neural network backbone. Meanwhile, an additional fully connected layer is appended for the classification loss.  }
    \label{fig:featurestream}
 \end{figure}
-
 一般基于任务的微调方法也分为基于监督标签的监督训练微调（Supervised Fine-tuning） 以及无监督训练微调 （Unsupervised Finetuning）的方法。本文主要介绍基于监督训练的微调方法的主要架构以及发展。\par
 \textbf{基于分类损失的微调方法:} 基于分类损失函数的微调方法, 根据图像检索数据集提供的标签, 在基础的主干神经网络例如AlexNet、VGG、 GoogleNet后添加一个全连接层用于分类, 然后使用交叉熵 （Cross Entropy）损失函数以及随机梯度下降进行端到端的训练优化CNN的参数。 基本的神经网络架构如图Fig.~\ref{fig:featurestream} 所示。一般做法需要在基础的架构后添加一个全连接层, 全连接层的输出维度是图片的类的数量。 对于单分类的数据集, 标准的基于交叉熵的损失函数如下:
 \begin{equation}
@@ -170,7 +166,7 @@ Tolias 等人提出R-MAC~\cite{tolias2015particular}在特征图中分块进行�
     \centering
     \includegraphics[width=15cm]{siamese.pdf} \\
     \bicaption[基于孪生神经网络的图像检索架构]
-      {基与孪生CNN架构的微调图像检索架构。输入的图片以图片对的形式同时输入权重共享的CNN中, 使用对比损失来拉近相同标签图片的表征, 拉远不同标签的表征}
+      {基于孪生CNN架构的微调图像检索架构。输入的图片以图片对的形式同时输入权重共享的CNN中, 使用对比损失来拉近相同标签图片的表征, 拉远不同标签的表征}
       {The framework of siamese convolutional Neural Network based image retrieval with contrastive loss. The input images are organized in pairs. The pairwise contrastive loss is adopted to push away representations from negative image pairs and pull close those from positive pairs }
    \label{fig:siamese}
 \end{figure}
@@ -191,7 +187,7 @@ Tolias 等人提出R-MAC~\cite{tolias2015particular}在特征图中分块进行�
     \centering
     \includegraphics[width=15cm]{siamese_variant.pdf} \\
     \bicaption[基于孪生神经网络的第二种图像检索架构]
-      {基于孪生CNN架构的微调的另一种架构, 通过在拼接两个卷积神经网络的输出, 然后使用一个计算相似度的全连接网络生成相似度的评分。}
+      {基于孪生CNN架构的微调的另一种架构, 通过拼接两个卷积神经网络的输出, 然后使用一个计算相似度的全连接网络生成相似度的评分。}
       {The framework of another siamese convolutional neural network based image retrieval. It concatenate the output from two indential convolutional backbones and output a similarity score by using a fully-connected similarity network.}
    \label{fig:siamesevariant}
 \end{figure}
@@ -210,7 +206,7 @@ Cao ~\cite{cao2016quartet} 提出Quartet-net 使用双间隔对比损失函数�
         \end{array}
         \label{eq:doublem}
 \end{equation}
-其中$m_1 > 0$ 并且 $m_2 > 0$ 是对应对于正样本对和负样本对的间隔参数。由 Eq.~\ref{eq:doublem}所知, 对于正样本对, 也就是 $\mathcal{S}_{x_i, x_j} = 1$, 损失函数只会使两个向量的距离接近$m_1$ 而不是接近 $0$。同时, 文章使用一个模仿学习 （Mimic Learning）, 额外引入一个教师卷积神经网络 （Teacher CNN ），模仿学习的损失函数如下:
+其中$m_1 > 0$ 并且 $m_2 > 0$ 是对应对于正样本对和负样本对的间隔参数。由 Eq.~\ref{eq:doublem}所示, 对于正样本对, 也就是 $\mathcal{S}_{x_i, x_j} = 1$, 损失函数只会使两个向量的距离接近$m_1$ 而不是接近 $0$。同时, 文章使用一个模仿学习(Mimic Learning), 额外引入一个教师卷积神经网络 (Teacher CNN), 模仿学习的损失函数如下:
 \begin{equation}
     E(\mathbf{x})=\frac{1}{2}\left\|\mathbf{z}_S-\mathbf{z}_T\right\|_2^2.
 \end{equation}
@@ -238,7 +234,7 @@ $ 是欧式距离。 由公式可知, 损失函数会尽量拉进正样本对的
    \label{fig:tripletnet}
 \end{figure}
 2016年, Gordo~\cite{gordo2016deep, gordo2017end} 提出基于最早的三元卷积神经网络用于图像检索。为了学习到对于检索最重要的局部信息, 文章额外训练了Regional Proposal Network~\cite{ren2015faster}用于检测图片中的目标区域, 同时基于R-MAC进行池化生成全局匹配的特征向量。\par
-2019年, Xiang~\cite{xiang2019multiple} 提出 MSCNet。 MSCNet 包含一个多显著度注意力模块(Multiple Saliency Block) 来学习卷积后的特征图的显著性掩码 （Multiple Saliency Mask）。同时, 设计了一个基于Gram 矩阵的通道敏感性的模块来学习通道维度的权重, 最后基于三元损失函数监督进行模型微调。\par
+2019年, Xiang~\cite{xiang2019multiple} 提出 MSCNet。 MSCNet 包含一个多显著度注意力模块(Multiple Saliency Block) 来学习卷积后的特征图的显著性掩码 (Multiple Saliency Mask)。同时, 设计了一个基于Gram 矩阵的通道敏感性的模块来学习通道维度的权重, 最后基于三元损失函数监督进行模型微调。\par
 仅基于三元损失训练的检索框架可能会难以学到图片用于进行分类的识别力特征, 一系列工作开始在三元神经网络后插入一个用于分类的全连接神经网络, 并用三元损失函数和分类损失函数进行联合监督:
 \begin{equation}
     \mathcal{L}_{\text {Joint }}=\lambda_1 \cdot \mathcal{L}_{\text {Triplet }}\left(x_{i, a}, x_{i, p}, x_{i, n}\right)+\lambda_2 \cdot \mathcal{L}_{C E}\left(\hat{p}_i, y_i\right).
@@ -306,7 +302,7 @@ $\operatorname{sgn} $将连续的向量二值化变成二进制哈希编码。�
       {The illustration of vector quantization in two-dimensional space. The black + denotes the input vector while the red circle represents the codeword. Cells separated by black lines are called voronoi cells. }
    \label{fig:vectorquant}
 \end{figure}
-基于量化编码的哈希方法是近似邻搜索的另一个主要的研究方向。一个经典的量化方法是\textbf{向量量化} ~\cite{gray1984vector}是把特征空间离散成多个码字, 然后通过把向量映射成对应码字的索引进行压缩编码, 简单示意图如 Fig.~\ref{fig:vectorquant}。量化方法中最重要的是一个量化器 (quantizer)  $q$ 是一个函数，将一个 D 维的向量 $x \in \mathbb{R}^D$映射到另一个有限的向量集中的一个向量:
+基于量化编码的哈希方法是近似邻搜索的另一个主要的研究方向。一个经典的量化方法\textbf{向量量化} ~\cite{gray1984vector}是把特征空间离散成多个码字, 然后通过把向量映射成对应码字的索引进行压缩编码, 简单示意图如 Fig.~\ref{fig:vectorquant}。量化方法中最重要的量化器 (quantizer)  $q$ 是一个函数，将一个 D 维的向量 $x \in \mathbb{R}^D$映射到另一个有限的向量集中的一个向量:
 \begin{equation}
     q(x) \in \mathcal{C} = \left \{ c_i; i \in  \mathcal{I}\right\}.
     \label{eq:vector}
@@ -338,7 +334,7 @@ Decoder $d(.)$则通过每个子encoder得到的索引,找到对应的sub-codewo
 \begin{equation}
     \mathcal{D}(\mathbf{y}, \mathbf{x})^2 \approx \tilde{\mathcal{D}}(\mathbf{y}, \mathbf{x})^2=d(\mathbf{y}, \tilde{\mathbf{x}})^2.
 \end{equation}
-为了加速ADC的计算通常会通过存储距离表（Lookup Table）然后再读取距离。对于每一个查询向量$y$, 对于其每一个子向量$y^m \in \mathbb{R}^{\frac{D}{M}} (m \in \left \{ 1,...,M  \right \})$。我们计算它与对应的sub-codebook里面的所有$K$个sub-codeword $c_k^m \in \mathcal{C}$的距离, 然后将其存储在距离查找表中:
+为了加速ADC的计算通常会通过存储距离表（Lookup Table）来读取距离。对于每一个查询向量$y$, 对于其每一个子向量$y^m \in \mathbb{R}^{\frac{D}{M}} (m \in \left \{ 1,...,M  \right \})$。我们计算它与对应的sub-codebook里面的所有$K$个sub-codeword $c_k^m \in \mathcal{C}$的距离, 然后将其存储在距离查找表中:
 \begin{equation}
     A(m, k)=d\left(\mathbf{y}^m, \mathbf{c}_k^m\right)^2
 \end{equation}
@@ -349,7 +345,7 @@ Decoder $d(.)$则通过每个子encoder得到的索引,找到对应的sub-codewo
         & =\sum_{m=1}^M \mathcal{D}\left(\mathbf{y}^m, \mathbf{c}_{i^m}^m\right)^2=\sum_{m=1}^M A\left(m, i^m\right)
     \end{aligned}
 \end{equation}
-其中$\mathcal{D}$是欧式距离。其中 $i = \left[i^1,...,i^M \right]$ 是 $x$对应的PQ-code。通过这种方式,只需要计算查找表$A$里的距离, 其余的距离计算如上可以通过查表解决。计算复杂度为$O(DK + MN)$, 其中$D$ 为向量的维度, $K$ 是sub-codebook的大小, $M$是sub-codebook的个数, $N$是数据库存储的数据的数量。同时PQ也可以和倒排索引等方法组合, 缩小搜索空间,提高检索效率。随后, 基于乘积量化的改进还有 optimizied product quantization~\cite{ge2013optimized}、additive quantization~\cite{martinez2016revisiting}、compositive quantization~\cite{zhang2014composite}, 以及 Iterative Quantization~\cite{gong2012iterative}。\par
+其中$\mathcal{D}$是欧式距离。其中 $i = \left[i^1,...,i^M \right]$ 是 $x$对应的PQ-code。通过这种方式,只需要计算查找表$A$里的距离, 其余的距离计算如上可以通过查表解决。计算复杂度为$O(DK + MN)$, 其中$D$ 为向量的维度, $K$ 是sub-codebook的大小, $M$是sub-codebook的个数, $N$是数据库存储的数据的数量。同时PQ也可以和倒排索引等方法组合, 缩小搜索空间,提高检索效率。随后, 基于乘积量化的改进还有 Optimizied Product Quantization~\cite{ge2013optimized}、Additive Quantization~\cite{martinez2016revisiting}、Compositive Quantization~\cite{zhang2014composite}, 以及 Iterative Quantization~\cite{gong2012iterative}。\par
 基于传统哈希编码的图像检索方式由于需要先通过手工特征提取的方法提取特征,  然后通过哈希编码或者量化编码的方法压缩特征并且加速检索。由于传统手工特征提取的方式很捕捉高级语义特征, 基于深度学习的哈希检索方法成为了大规模图像检索的主流。
 
 \subsubsection{基于深度学习的哈希}
@@ -425,7 +421,7 @@ Decoder $d(.)$则通过每个子encoder得到的索引,找到对应的sub-codewo
    \label{fig:trihash}
 \end{figure}
 \subsubsection{基于深度学习的量化}
-第一个将量化学习引入深度图片检索的工作是\textbf{DQN}~\cite{yue2016deep}, 由清华大学的Cao~等人提出, 基础架构如图~\ref{fig:dqn}所示。\textbf{DQN} 采取深度卷积神经网络以及成对的对比损失函数提取图片特征, 随后使用乘积量化（Product Quantization）来将高位特征向量压缩成二进制哈希码。其中的乘积量化损失函数如下所示:
+第一个将量化学习引入深度图片检索的工作是\textbf{DQN}~\cite{yue2016deep}, 由清华大学的Cao~等人提出, 基础架构如图~\ref{fig:dqn}所示。\textbf{DQN} 采取深度卷积神经网络以及成对的对比损失函数提取图片特征, 随后使用乘积量化（Product Quantization）来将高维特征向量压缩成二进制哈希码。其中的乘积量化损失函数如下所示:
 \begin{equation}
     \begin{gathered}
         Q=\sum_{m=1}^M \sum_{i=1}^N\left\|\boldsymbol{z}_{i m}^l-\boldsymbol{C}_m \boldsymbol{h}_{i m}\right\|_2^2 \\
@@ -438,7 +434,7 @@ Decoder $d(.)$则通过每个子encoder得到的索引,找到对应的sub-codewo
     \centering
     \includegraphics[width=15cm]{dqn.pdf} \\
     \bicaption[深度乘积量化的框架图]
-      {深度乘积量化网络的框架图。左侧是标准的卷积神经网络用语特征提取。成对的余弦损失函数用来进行保距的度量学习。同时采用了量化损失函数用来生成紧凑的量化编码。}
+      {深度乘积量化网络的框架图。左侧是标准的卷积神经网络用于特征提取。成对的余弦损失函数用来进行保距的度量学习。同时采用了量化损失函数用来生成紧凑的量化编码。}
       {The framework of deep quantization network for image retrieval. The left is a standard convolutional neural network for feature extraction. Pairwisie cosine loss is adopted for similarity preserving learning. Product quantization loss is further employed to generate compact binary codes.}
    \label{fig:dqn}
 \end{figure}
@@ -483,15 +479,15 @@ Decoder $d(.)$则通过每个子encoder得到的索引,找到对应的sub-codewo
 \subsection{本文的组织结构}
 本文一共分为六个章节。结构如下: \par
 第一章: 首先介绍了研究的主要背景以及研究意义, 同时介绍了大规模图像检索面临的挑战。随后主要介绍了图像检索的发展历史以及国内外的研究现状, 主要讲述了早期基于手工特征的图像检索, 以及深度学习的主干网络进展现状, 之后介绍了基于深度特征的图像检索，最后着重阐述基于深度哈希的检索方法的背景以及各种最新的研究技术。本章最后介绍文章的主要结构以及贡献。 \par
-第二章: 对图像检索的经典应用跨模态行人重识别问题进行了深入研究。设计了一个 MAENet 网络来对齐两个模态的特征, 并且设计了新型的跨模态检索的损失函数来进行监督训练, 在两个标准的跨模态重识别数据集上进行训练和测试证明了算法的有效性。 \par
-第三章: 第一次将深度哈希技术应用到车辆重识别领域, 设计一个新型的离散哈希模块, 架构可以同时通过基于困难三元组的损失函数进行特征学习, 以及离散的哈希模块来生成汉明哈希码, 实验证明该方法可以大幅度提升大规模车辆检索的性能。 \par
+第二章: 针对跨模态细粒度行人重识别图像检索中的提取出可辨别性特征能力的不足的问题进行了深入研究。为了有效的解决跨模态行人重识别检索的问题, 设计了一个 MAENet 网络来对齐两个模态的特征, 并且设计了新型的跨模态检索的损失函数来进行监督训练, 在两个标准的跨模态重识别数据集上进行训练和测试证明了算法的有效性。 \par
+第三章:  针对现有的车辆图像检索的算法存储效率低以及检索速度慢以及现有的深度哈希算法在类间差异较小的场景下表征学习的难点, 提出了第一个基于困难三元组的离散哈希架构。第一次将深度哈希技术应用到车辆重识别领域, 设计一个新型的离散哈希模块, 架构可以同时通过基于困难三元组的损失函数进行特征学习, 以及离散的哈希模块来生成汉明哈希码, 实验证明该方法可以大幅度提升大规模车辆检索的性能。 \par
 第四章: 提出第一个基于视觉Transformer的深度哈希架构, 通过基于孪生视觉Transformer以及一个新型的双流特征学习模块, 和基于贝叶斯学习的框架来进行细粒度表征学习。在标准化的图像检索数据集上取得了显著的性能提升。 \par
 第五章: 提出了一种第一个基于乘积量化的视觉Transformer用于大规模图像检索。设计了一个双支视觉Transformer 量化网络, 同时设计了一个基于排序损失的量化损失函数来直接进行量化编码学习, 在多个数据集上验证了该算法的效果。 \par
 第六章: 对本文的主要创新点与研究内容进行了总结, 并对未来的研究进行展望。 \par 
 本文的组织结构图如图~\ref{fig:overallarch}所示。
 \begin{figure}[!htp]
     \centering
-    \includegraphics[width=14cm]{paper_arch.pdf} \\
+    \includegraphics[width=12cm]{paper_arch.pdf} \\
     \bicaption[文章组织结构图]
       {文章的组织结构图}
       {The architecture of this thesis.}
